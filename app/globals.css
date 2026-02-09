@@ -8,7 +8,6 @@
 @custom-variant dark (&:is(.dark, .dark *));
 
 /* include plugins */
-@plugin "tailwindcss-animate";
 @plugin "@tailwindcss/typography";
 
 /* define design tokens (light mode) */
@@ -280,7 +279,7 @@
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 3px;
-  transition: background 0.2s ease;
+
 }
 
 ::-webkit-scrollbar-thumb:hover {

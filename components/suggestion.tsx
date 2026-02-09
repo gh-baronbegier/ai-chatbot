@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useWindowSize } from "usehooks-ts";
 
@@ -23,16 +22,11 @@ export const Suggestion = ({
   const { width: windowWidth } = useWindowSize();
 
   return (
-    <AnimatePresence>
+    <>
       {isExpanded ? (
-        <motion.div
-          animate={{ opacity: 1, y: -20 }}
+        <div
           className="absolute -right-12 z-50 flex w-56 flex-col gap-3 rounded-2xl border bg-background p-3 font-sans text-sm shadow-xl md:-right-16"
-          exit={{ opacity: 0, y: -10 }}
-          initial={{ opacity: 0, y: -10 }}
           key={suggestion.id}
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-          whileHover={{ scale: 1.05 }}
         >
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-row items-center gap-2">
@@ -57,9 +51,9 @@ export const Suggestion = ({
           >
             Apply
           </Button>
-        </motion.div>
+        </div>
       ) : (
-        <motion.div
+        <div
           className={cn("cursor-pointer p-1 text-muted-foreground", {
             "absolute -right-8": artifactKind === "text",
             "sticky top-0 right-4": artifactKind === "code",
@@ -67,11 +61,10 @@ export const Suggestion = ({
           onClick={() => {
             setIsExpanded(true);
           }}
-          whileHover={{ scale: 1.1 }}
         >
           <MessageIcon size={windowWidth && windowWidth < 768 ? 16 : 14} />
-        </motion.div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 };

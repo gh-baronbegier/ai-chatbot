@@ -1,12 +1,6 @@
 "use client";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import cx from "classnames";
-import {
-  AnimatePresence,
-  motion,
-  useMotionValue,
-  useTransform,
-} from "framer-motion";
 import { nanoid } from "nanoid";
 import {
   type Dispatch,
@@ -87,38 +81,29 @@ const Tool = ({
   return (
     <Tooltip open={isHovered && !isAnimating}>
       <TooltipTrigger asChild>
-        <motion.div
-          animate={{ opacity: 1, transition: { delay: 0.1 } }}
+        <div
           className={cx("rounded-full p-3", {
             "bg-primary text-primary-foreground!": selectedTool === description,
           })}
-          exit={{
-            scale: 0.9,
-            opacity: 0,
-            transition: { duration: 0.1 },
-          }}
-          initial={{ scale: 1, opacity: 0 }}
           onClick={() => {
             handleSelect();
           }}
-          onHoverEnd={() => {
+          onMouseEnter={() => {
+            setIsHovered(true);
+          }}
+          onMouseLeave={() => {
             if (selectedTool !== description) {
               setIsHovered(false);
             }
-          }}
-          onHoverStart={() => {
-            setIsHovered(true);
           }}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               handleSelect();
             }
           }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
         >
           {selectedTool === description ? <ArrowUpIcon /> : icon}
-        </motion.div>
+        </div>
       </TooltipTrigger>
       <TooltipContent
         className="rounded-2xl bg-foreground p-3 px-4 text-background"
@@ -151,42 +136,25 @@ const ReadingLevelSelector = ({
     "Graduate",
   ];
 
-  const y = useMotionValue(-40 * 2);
-  const dragConstraints = 5 * 40 + 2;
-  const yToLevel = useTransform(y, [0, -dragConstraints], [0, 5]);
-
   const [currentLevel, setCurrentLevel] = useState(2);
   const [hasUserSelectedLevel, setHasUserSelectedLevel] =
     useState<boolean>(false);
 
-  useEffect(() => {
-    const unsubscribe = yToLevel.on("change", (latest) => {
-      const level = Math.min(5, Math.max(0, Math.round(Math.abs(latest))));
-      setCurrentLevel(level);
-    });
-
-    return () => unsubscribe();
-  }, [yToLevel]);
-
   return (
     <div className="relative flex flex-col items-center justify-end">
       {randomArr.map((id) => (
-        <motion.div
-          animate={{ opacity: 1 }}
+        <div
           className="flex size-[40px] flex-row items-center justify-center"
-          exit={{ opacity: 0 }}
-          initial={{ opacity: 0 }}
           key={id}
-          transition={{ delay: 0.1 }}
         >
           <div className="size-2 rounded-full bg-muted-foreground/40" />
-        </motion.div>
+        </div>
       ))}
 
       <TooltipProvider>
         <Tooltip open={!isAnimating}>
           <TooltipTrigger asChild>
-            <motion.div
+            <div
               className={cx(
                 "absolute flex flex-row items-center rounded-full border bg-background p-3",
                 {
@@ -194,10 +162,6 @@ const ReadingLevelSelector = ({
                   "bg-background text-foreground": currentLevel === 2,
                 }
               )}
-              drag="y"
-              dragConstraints={{ top: -dragConstraints, bottom: 0 }}
-              dragElastic={0}
-              dragMomentum={false}
               onClick={() => {
                 if (currentLevel !== 2 && hasUserSelectedLevel) {
                   sendMessage({
@@ -213,23 +177,9 @@ const ReadingLevelSelector = ({
                   setSelectedTool(null);
                 }
               }}
-              onDragEnd={() => {
-                if (currentLevel === 2) {
-                  setSelectedTool(null);
-                } else {
-                  setHasUserSelectedLevel(true);
-                }
-              }}
-              onDragStart={() => {
-                setHasUserSelectedLevel(false);
-              }}
-              style={{ y }}
-              transition={{ duration: 0.1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
               {currentLevel === 2 ? <SummarizeIcon /> : <ArrowUpIcon />}
-            </motion.div>
+            </div>
           </TooltipTrigger>
           <TooltipContent
             className="rounded-2xl bg-foreground p-3 px-4 text-background text-sm"
@@ -264,27 +214,20 @@ export const Tools = ({
   const [primaryTool, ...secondaryTools] = tools;
 
   return (
-    <motion.div
-      animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col gap-1.5"
-      exit={{ opacity: 0, scale: 0.95 }}
-      initial={{ opacity: 0, scale: 0.95 }}
-    >
-      <AnimatePresence>
-        {isToolbarVisible &&
-          secondaryTools.map((secondaryTool) => (
-            <Tool
-              description={secondaryTool.description}
-              icon={secondaryTool.icon}
-              isAnimating={isAnimating}
-              key={secondaryTool.description}
-              onClick={secondaryTool.onClick}
-              selectedTool={selectedTool}
-              sendMessage={sendMessage}
-              setSelectedTool={setSelectedTool}
-            />
-          ))}
-      </AnimatePresence>
+    <div className="flex flex-col gap-1.5">
+      {isToolbarVisible &&
+        secondaryTools.map((secondaryTool) => (
+          <Tool
+            description={secondaryTool.description}
+            icon={secondaryTool.icon}
+            isAnimating={isAnimating}
+            key={secondaryTool.description}
+            onClick={secondaryTool.onClick}
+            selectedTool={selectedTool}
+            sendMessage={sendMessage}
+            setSelectedTool={setSelectedTool}
+          />
+        ))}
 
       <Tool
         description={primaryTool.description}
@@ -297,7 +240,7 @@ export const Tools = ({
         setIsToolbarVisible={setIsToolbarVisible}
         setSelectedTool={setSelectedTool}
       />
-    </motion.div>
+    </div>
   );
 };
 
@@ -376,43 +319,16 @@ const PureToolbar = ({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <motion.div
-        animate={
-          isToolbarVisible
-            ? selectedTool === "adjust-reading-level"
-              ? {
-                  opacity: 1,
-                  y: 0,
-                  height: 6 * 43,
-                  transition: { delay: 0 },
-                  scale: 0.95,
-                }
-              : {
-                  opacity: 1,
-                  y: 0,
-                  height: toolsByArtifactKind.length * 50,
-                  transition: { delay: 0 },
-                  scale: 1,
-                }
-            : { opacity: 1, y: 0, height: 54, transition: { delay: 0 } }
-        }
+      <div
         className="absolute right-6 bottom-6 flex cursor-pointer flex-col justify-end rounded-full border bg-background p-1.5 shadow-lg"
-        exit={{ opacity: 0, y: -20, transition: { duration: 0.1 } }}
-        initial={{ opacity: 0, y: -20, scale: 1 }}
-        onAnimationComplete={() => {
-          setIsAnimating(false);
-        }}
-        onAnimationStart={() => {
-          setIsAnimating(true);
-        }}
-        onHoverEnd={() => {
+        onMouseLeave={() => {
           if (status === "streaming") {
             return;
           }
 
           startCloseTimer();
         }}
-        onHoverStart={() => {
+        onMouseEnter={() => {
           if (status === "streaming") {
             return;
           }
@@ -421,14 +337,10 @@ const PureToolbar = ({
           setIsToolbarVisible(true);
         }}
         ref={toolbarRef}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }}
       >
         {status === "streaming" ? (
-          <motion.div
-            animate={{ scale: 1.4 }}
+          <div
             className="p-3"
-            exit={{ scale: 1 }}
-            initial={{ scale: 1 }}
             key="stop-icon"
             onClick={() => {
               stop();
@@ -436,7 +348,7 @@ const PureToolbar = ({
             }}
           >
             <StopIcon />
-          </motion.div>
+          </div>
         ) : selectedTool === "adjust-reading-level" ? (
           <ReadingLevelSelector
             isAnimating={isAnimating}
@@ -456,7 +368,7 @@ const PureToolbar = ({
             tools={toolsByArtifactKind}
           />
         )}
-      </motion.div>
+      </div>
     </TooltipProvider>
   );
 };

@@ -54,7 +54,7 @@ const PurePreviewMessage = ({
 
   return (
     <div
-      className="group/message fade-in w-full animate-in duration-200"
+      className="group/message w-full"
       data-role={message.role}
       data-testid={`message-${message.role}`}
     >
@@ -229,7 +229,7 @@ const PurePreviewMessage = ({
                       {state === "approval-requested" && approvalId && (
                         <div className="flex items-center justify-end gap-2 border-t px-4 py-3">
                           <button
-                            className="rounded-md px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
+                            className="rounded-md px-3 py-1.5 text-muted-foreground text-sm hover:bg-muted hover:text-foreground"
                             onClick={() => {
                               addToolApprovalResponse({
                                 id: approvalId,
@@ -242,7 +242,7 @@ const PurePreviewMessage = ({
                             Deny
                           </button>
                           <button
-                            className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm transition-colors hover:bg-primary/90"
+                            className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm hover:bg-primary/90"
                             onClick={() => {
                               addToolApprovalResponse({
                                 id: approvalId,
@@ -366,7 +366,7 @@ export const PreviewMessage = PurePreviewMessage;
 export const ThinkingMessage = () => {
   return (
     <div
-      className="group/message fade-in w-full animate-in duration-300"
+      className="group/message w-full"
       data-role="assistant"
       data-testid="message-assistant-loading"
     >

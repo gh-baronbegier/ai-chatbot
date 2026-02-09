@@ -301,14 +301,14 @@ export function PromptInputAttachment({
       <HoverCardTrigger asChild>
         <div
           className={cn(
-            "group relative flex h-8 cursor-pointer select-none items-center gap-1.5 rounded-md border border-border px-1.5 font-medium text-sm transition-all hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+            "group relative flex h-8 cursor-pointer select-none items-center gap-1.5 rounded-md border border-border px-1.5 font-medium text-sm hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
             className
           )}
           key={data.id}
           {...props}
         >
           <div className="relative size-5 shrink-0">
-            <div className="flex overflow-hidden absolute inset-0 justify-center items-center rounded transition-opacity size-5 bg-background group-hover:opacity-0">
+            <div className="flex overflow-hidden absolute inset-0 justify-center items-center rounded size-5 bg-background group-hover:opacity-0">
               {isImage ? (
                 /* biome-ignore lint/performance/noImgElement: dynamic user uploads */
                 <img
@@ -326,7 +326,7 @@ export function PromptInputAttachment({
             </div>
             <Button
               aria-label="Remove attachment"
-              className="absolute inset-0 size-5 cursor-pointer rounded p-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&>svg]:size-2.5"
+              className="absolute inset-0 size-5 cursor-pointer rounded p-0 opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 [&>svg]:size-2.5"
               onClick={(e) => {
                 e.stopPropagation();
                 attachments.remove(data.id);
@@ -1213,7 +1213,7 @@ export const PromptInputSpeechButton = ({
   return (
     <PromptInputButton
       className={cn(
-        "relative transition-all duration-200",
+        "relative",
         isListening && "animate-pulse bg-accent text-accent-foreground",
         className
       )}
@@ -1242,7 +1242,7 @@ export const PromptInputSelectTrigger = ({
 }: PromptInputSelectTriggerProps) => (
   <SelectTrigger
     className={cn(
-      "font-medium bg-transparent border-none shadow-none transition-colors text-muted-foreground",
+      "font-medium bg-transparent border-none shadow-none text-muted-foreground",
       "hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground",
       className
     )}

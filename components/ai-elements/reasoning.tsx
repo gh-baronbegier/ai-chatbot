@@ -139,7 +139,7 @@ export const ReasoningTrigger = memo(
     return (
       <CollapsibleTrigger
         className={cn(
-          "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+          "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground",
           className
         )}
         {...props}
@@ -150,7 +150,7 @@ export const ReasoningTrigger = memo(
             {getThinkingMessage(isStreaming, duration)}
             <ChevronDownIcon
               className={cn(
-                "size-2.5 transition-transform",
+                "size-2.5",
                 isOpen ? "rotate-180" : "rotate-0"
               )}
             />
@@ -172,7 +172,7 @@ export const ReasoningContent = memo(
     <CollapsibleContent
       className={cn(
         "mt-1.5 text-[11px] leading-relaxed",
-        "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 text-muted-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
+        "text-muted-foreground outline-none",
         className
       )}
       {...props}
