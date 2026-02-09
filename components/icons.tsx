@@ -383,16 +383,24 @@ export const MenuIcon = ({ size = 16 }: { size?: number }) => {
   return (
     <svg
       height={size}
-      strokeLinejoin="round"
-      style={{ color: "currentcolor" }}
-      viewBox="0 0 16 16"
+      viewBox="0 0 18 18"
       width={size}
     >
-      <path
-        clipRule="evenodd"
-        d="M1 2H1.75H14.25H15V3.5H14.25H1.75H1V2ZM1 12.5H1.75H14.25H15V14H14.25H1.75H1V12.5ZM1.75 7.25H1V8.75H1.75H14.25H15V7.25H14.25H1.75Z"
-        fill="currentColor"
-        fillRule="evenodd"
+      <polyline
+        fill="none"
+        points="2 5, 16 5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.2"
+      />
+      <polyline
+        fill="none"
+        points="2 12, 16 12"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.2"
       />
     </svg>
   );

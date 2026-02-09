@@ -1,5 +1,5 @@
 // Curated list of top models from Vercel AI Gateway
-export const DEFAULT_CHAT_MODEL = "anthropic-direct/claude-opus-4-6-think-medium";
+export const DEFAULT_CHAT_MODEL = "groq/openai/gpt-oss-120b";
 
 export type ChatModel = {
   id: string;
@@ -174,7 +174,7 @@ export const chatModels: ChatModel[] = [
   // =====================
   { id: "anthropic-direct/claude-opus-4-5", name: "Claude Opus 4.5 (Direct)", provider: "anthropic-direct", description: "Ctx: 200K | Direct Anthropic API" },
   { id: "anthropic-direct/claude-sonnet-4-5", name: "Claude Sonnet 4.5 (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | Direct Anthropic API" },
-  { id: "anthropic-direct/claude-sonnet-4", name: "Claude Sonnet 4 (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | Direct Anthropic API" },
+  { id: "anthropic-direct/claude-sonnet-4-0", name: "Claude Sonnet 4 (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | Direct Anthropic API" },
   { id: "anthropic-direct/claude-haiku-4-5", name: "Claude Haiku 4.5 (Direct)", provider: "anthropic-direct", description: "Ctx: 200K | Direct Anthropic API" },
   { id: "anthropic-direct/claude-opus-4-6", name: "Claude Opus 4.6 (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | No thinking" },
   { id: "anthropic-direct/claude-opus-4-6-think-low", name: "Claude Opus 4.6 Think Low (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | 10K thinking budget" },
@@ -204,6 +204,21 @@ export const chatModels: ChatModel[] = [
   { id: "google-direct/gemini-2.5-flash", name: "Gemini 2.5 Flash (Direct)", provider: "google-direct", description: "Ctx: 1M | Direct Google AI Studio" },
   { id: "google-direct/gemini-3-flash", name: "Gemini 3 Flash (Direct)", provider: "google-direct", description: "Ctx: 1M | Direct Google AI Studio" },
   { id: "google-direct/gemini-3-pro-preview", name: "Gemini 3 Pro Preview (Direct)", provider: "google-direct", description: "Ctx: 1M | Direct Google AI Studio" },
+
+  // =====================
+  // Claude MAX (via anthropic-max-router — flat-rate, full tool support)
+  // =====================
+  { id: "claude-max/claude-opus-4-6", name: "Claude Opus 4.6 (MAX)", provider: "claude-max", description: "Ctx: 1M | MAX flat-rate + tools" },
+  { id: "claude-max/claude-opus-4-6-think-low", name: "Opus 4.6 Think Low (MAX)", provider: "claude-max", description: "Ctx: 1M | 10K thinking budget" },
+  { id: "claude-max/claude-opus-4-6-think-medium", name: "Opus 4.6 Think Med (MAX)", provider: "claude-max", description: "Ctx: 1M | 32K thinking budget" },
+  { id: "claude-max/claude-opus-4-6-think-high", name: "Opus 4.6 Think High (MAX)", provider: "claude-max", description: "Ctx: 1M | 128K thinking budget" },
+  { id: "claude-max/claude-opus-4-5", name: "Claude Opus 4.5 (MAX)", provider: "claude-max", description: "Ctx: 200K | MAX flat-rate + tools" },
+  { id: "claude-max/claude-sonnet-4-5", name: "Claude Sonnet 4.5 (MAX)", provider: "claude-max", description: "Ctx: 1M | MAX flat-rate + tools" },
+  { id: "claude-max/claude-sonnet-4-5-think-low", name: "Sonnet 4.5 Think Low (MAX)", provider: "claude-max", description: "Ctx: 1M | 10K thinking budget" },
+  { id: "claude-max/claude-sonnet-4-5-think-medium", name: "Sonnet 4.5 Think Med (MAX)", provider: "claude-max", description: "Ctx: 1M | 32K thinking budget" },
+  { id: "claude-max/claude-sonnet-4-5-think-high", name: "Sonnet 4.5 Think High (MAX)", provider: "claude-max", description: "Ctx: 1M | 128K thinking budget" },
+  { id: "claude-max/claude-sonnet-4-0", name: "Claude Sonnet 4 (MAX)", provider: "claude-max", description: "Ctx: 1M | MAX flat-rate + tools" },
+  { id: "claude-max/claude-haiku-4-5", name: "Claude Haiku 4.5 (MAX)", provider: "claude-max", description: "Ctx: 200K | MAX flat-rate + tools" },
 ];
 
 // Group models by provider for UI

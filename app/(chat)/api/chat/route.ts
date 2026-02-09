@@ -18,6 +18,7 @@ import { getBaronLocation } from "@/lib/ai/tools/get-baron-location";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import { getNeonTools } from "@/lib/ai/mcp/neon";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
@@ -62,6 +63,8 @@ export async function POST(request: Request) {
   try {
     const { id, message, messages, selectedChatModel, selectedVisibilityType } =
       requestBody;
+
+    console.log("[chat] selectedChatModel:", selectedChatModel);
 
     const session = await auth();
 
@@ -147,11 +150,13 @@ export async function POST(request: Request) {
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
+        const neon = await getNeonTools();
+
         const result = streamText({
           model: getLanguageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
           messages: modelMessages,
-          stopWhen: stepCountIs(5),
+          stopWhen: stepCountIs(1000),
           experimental_activeTools: isReasoningModel
             ? []
             : [
@@ -160,7 +165,8 @@ export async function POST(request: Request) {
                 "createDocument",
                 "updateDocument",
                 "requestSuggestions",
-              ],
+                ...(neon.toolNames as string[]),
+              ] as any,
           providerOptions: enableThinking
             ? {
                 anthropic: {
@@ -174,6 +180,10 @@ export async function POST(request: Request) {
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
+            ...neon.tools,
+          },
+          onFinish: async () => {
+            await neon.cleanup();
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,

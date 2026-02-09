@@ -38,6 +38,11 @@ const googleDirect = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
+const claudeMax = createAnthropic({
+  baseURL: process.env.CLAUDE_MAX_URL || "http://localhost:3456/v1",
+  apiKey: "max-plan",
+});
+
 export const myProvider = isTestEnvironment
   ? (() => {
       const {
@@ -92,6 +97,15 @@ export function getLanguageModel(modelId: string) {
   if (modelId.startsWith("xai-direct/")) {
     const xaiModelId = modelId.slice("xai-direct/".length);
     return xaiDirect.languageModel(xaiModelId);
+  }
+
+  // Route Claude MAX models (via anthropic-max-router — flat-rate, with tools)
+  // Strip -think-low/medium/high suffix (thinking budget handled in chat route)
+  if (modelId.startsWith("claude-max/")) {
+    const maxModelId = modelId
+      .slice("claude-max/".length)
+      .replace(/-think-(low|medium|high)$/, "");
+    return claudeMax.languageModel(maxModelId);
   }
 
   // Route direct Google models

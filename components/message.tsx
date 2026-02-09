@@ -16,7 +16,6 @@ import {
   ToolInput,
   ToolOutput,
 } from "./elements/tool";
-import { SparklesIcon } from "./icons";
 import { MessageActions } from "./message-actions";
 import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
@@ -59,17 +58,11 @@ const PurePreviewMessage = ({
       data-testid={`message-${message.role}`}
     >
       <div
-        className={cn("flex w-full items-start gap-2 md:gap-3", {
+        className={cn("flex w-full items-start", {
           "justify-end": message.role === "user" && mode !== "edit",
           "justify-start": message.role === "assistant",
         })}
       >
-        {message.role === "assistant" && (
-          <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
-            <SparklesIcon size={14} />
-          </div>
-        )}
-
         <div
           className={cn("flex flex-col", {
             "gap-2 md:gap-4": message.parts?.some(
@@ -128,17 +121,12 @@ const PurePreviewMessage = ({
                   <div key={key}>
                     <MessageContent
                       className={cn({
-                        "wrap-break-word w-fit rounded-2xl px-3 py-2 text-right text-white":
+                        "wrap-break-word w-fit text-right text-white":
                           message.role === "user",
                         "bg-transparent px-0 py-0 text-left":
                           message.role === "assistant",
                       })}
                       data-testid="message-content"
-                      style={
-                        message.role === "user"
-                          ? { backgroundColor: "#006cff" }
-                          : undefined
-                      }
                     >
                       <Response>{sanitizeText(part.text)}</Response>
                     </MessageContent>
@@ -152,7 +140,6 @@ const PurePreviewMessage = ({
                     className="flex w-full flex-row items-start gap-3"
                     key={key}
                   >
-                    <div className="size-8" />
                     <div className="min-w-0 flex-1">
                       <MessageEditor
                         key={message.id}
@@ -345,7 +332,7 @@ const PurePreviewMessage = ({
             return null;
           })}
 
-          {!isReadonly && (
+          {/* {!isReadonly && (
             <MessageActions
               chatId={chatId}
               isLoading={isLoading}
@@ -354,7 +341,7 @@ const PurePreviewMessage = ({
               setMode={setMode}
               vote={vote}
             />
-          )}
+          )} */}
         </div>
       </div>
     </div>
@@ -370,13 +357,7 @@ export const ThinkingMessage = () => {
       data-role="assistant"
       data-testid="message-assistant-loading"
     >
-      <div className="flex items-start justify-start gap-3">
-        <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
-          <div className="animate-pulse">
-            <SparklesIcon size={14} />
-          </div>
-        </div>
-
+      <div className="flex items-start justify-start">
         <div className="flex w-full flex-col gap-2 md:gap-4">
           <div className="flex items-center gap-1 p-0 text-muted-foreground text-sm">
             <span className="animate-pulse">Thinking</span>
