@@ -14,6 +14,7 @@ import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
+import { getBaronLocation } from "@/lib/ai/tools/get-baron-location";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
@@ -155,6 +156,7 @@ export async function POST(request: Request) {
             ? []
             : [
                 "getWeather",
+                "getBaronLocation",
                 "createDocument",
                 "updateDocument",
                 "requestSuggestions",
@@ -168,6 +170,7 @@ export async function POST(request: Request) {
             : undefined,
           tools: {
             getWeather,
+            getBaronLocation,
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
