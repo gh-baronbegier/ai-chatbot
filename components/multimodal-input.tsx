@@ -464,7 +464,8 @@ function PureModelSelectorCompact({
     chatModels.find((m) => m.id === selectedModelId) ??
     chatModels.find((m) => m.id === DEFAULT_CHAT_MODEL) ??
     chatModels[0];
-  const [provider] = selectedModel.id.split("/");
+  const [rawProvider] = selectedModel.id.split("/");
+  const provider = rawProvider.replace(/-direct$/, "");
 
   // Provider display names
   const providerNames: Record<string, string> = {
@@ -476,6 +477,11 @@ function PureModelSelectorCompact({
     meta: "Meta",
     mistral: "Mistral",
     venice: "Venice AI",
+    groq: "Groq",
+    "anthropic-direct": "Anthropic (Direct)",
+    "openai-direct": "OpenAI (Direct)",
+    "xai-direct": "xAI (Direct)",
+    "google-direct": "Google (Direct)",
   };
 
   return (
@@ -496,7 +502,7 @@ function PureModelSelectorCompact({
                 key={providerKey}
               >
                 {providerModels.map((model) => {
-                  const logoProvider = model.id.split("/")[0];
+                  const logoProvider = model.id.split("/")[0].replace(/-direct$/, "");
                   return (
                     <ModelSelectorItem
                       key={model.id}

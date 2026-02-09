@@ -70,14 +70,14 @@ export async function POST(request: Request) {
 
     const userType: UserType = session.user.type;
 
-    const messageCount = await getMessageCountByUserId({
-      id: session.user.id,
-      differenceInHours: 24,
-    });
+    // const messageCount = await getMessageCountByUserId({
+    //   id: session.user.id,
+    //   differenceInHours: 24,
+    // });
 
-    if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
-      return new ChatSDKError("rate_limit:chat").toResponse();
-    }
+    // if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
+    //   return new ChatSDKError("rate_limit:chat").toResponse();
+    // }
 
     const isToolApprovalFlow = Boolean(messages);
 
@@ -134,6 +134,13 @@ export async function POST(request: Request) {
       selectedChatModel.includes("reasoning") ||
       selectedChatModel.includes("thinking");
 
+    // Detect anthropic-direct thinking level from model ID suffix
+    const thinkMatch = selectedChatModel.match(/-think-(low|medium|high)$/);
+    const thinkingBudget = thinkMatch
+      ? { low: 10_000, medium: 32_000, high: 128_000 }[thinkMatch[1]]
+      : null;
+    const enableThinking = isReasoningModel || thinkingBudget !== null;
+
     const modelMessages = await convertToModelMessages(uiMessages);
 
     const stream = createUIMessageStream({
@@ -152,10 +159,10 @@ export async function POST(request: Request) {
                 "updateDocument",
                 "requestSuggestions",
               ],
-          providerOptions: isReasoningModel
+          providerOptions: enableThinking
             ? {
                 anthropic: {
-                  thinking: { type: "enabled", budgetTokens: 10_000 },
+                  thinking: { type: "enabled", budgetTokens: thinkingBudget ?? 10_000 },
                 },
               }
             : undefined,

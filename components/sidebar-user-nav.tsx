@@ -79,6 +79,22 @@ export function SidebarUserNav({ user }: { user: User }) {
             >
               {`Toggle ${resolvedTheme === "light" ? "dark" : "light"} mode`}
             </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onSelect={() => {
+                const isSystem =
+                  document.documentElement.classList.contains('font-system');
+                if (isSystem) {
+                  document.documentElement.classList.remove('font-system');
+                  localStorage.setItem('font', 'mono');
+                } else {
+                  document.documentElement.classList.add('font-system');
+                  localStorage.setItem('font', 'system');
+                }
+              }}
+            >
+              Toggle system font
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild data-testid="user-nav-item-auth">
               <button

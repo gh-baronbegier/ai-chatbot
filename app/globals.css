@@ -86,10 +86,14 @@
   --sidebar: hsl(240 5.9% 10%);
 }
 
+.font-system {
+  --font-sf-mono: -apple-system, BlinkMacSystemFont, "SF Pro", "Helvetica Neue", sans-serif;
+}
+
 /* define theme */
 @theme {
-  --font-sans: var(--font-geist);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sf-mono);
+  --font-mono: var(--font-sf-mono);
 
   --breakpoint-toast-mobile: 600px;
 

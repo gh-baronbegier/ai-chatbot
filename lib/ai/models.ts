@@ -1,5 +1,5 @@
 // Curated list of top models from Vercel AI Gateway
-export const DEFAULT_CHAT_MODEL = "google/gemini-2.5-flash-lite";
+export const DEFAULT_CHAT_MODEL = "anthropic-direct/claude-opus-4-6-think-medium";
 
 export type ChatModel = {
   id: string;
@@ -140,11 +140,70 @@ export const chatModels: ChatModel[] = [
   { id: "mistral/pixtral-large", name: "Pixtral Large", provider: "mistral", description: "Ctx: 128K | Strong multimodal" },
 
   // =====================
-  // Venice AI (3 models — custom provider)
+  // Venice AI (13 models — custom provider, uncensored)
   // =====================
   { id: "venice/llama-3.3-70b", name: "Llama 3.3 70B", provider: "venice", description: "Uncensored Llama via Venice AI" },
   { id: "venice/deepseek-r1-671b", name: "DeepSeek R1 671B", provider: "venice", description: "Full DeepSeek R1 via Venice AI" },
   { id: "venice/qwen-2.5-coder", name: "Qwen 2.5 Coder", provider: "venice", description: "Code-specialized model via Venice AI" },
+  { id: "venice/venice-uncensored", name: "Venice Uncensored 1.1", provider: "venice", description: "Ctx: 32K | Uncensored via Venice AI" },
+  { id: "venice/zai-org-glm-4.7-flash", name: "GLM 4.7 Flash", provider: "venice", description: "Ctx: 128K | Fast GLM via Venice AI" },
+  { id: "venice/zai-org-glm-4.7", name: "GLM 4.7", provider: "venice", description: "Ctx: 198K | Full GLM via Venice AI" },
+  { id: "venice/qwen3-4b", name: "Venice Small (Qwen 3 4B)", provider: "venice", description: "Ctx: 32K | Cheapest via Venice AI" },
+  { id: "venice/mistral-31-24b", name: "Venice Medium (Mistral 24B)", provider: "venice", description: "Ctx: 128K | Mid-tier via Venice AI" },
+  { id: "venice/qwen3-235b-a22b-thinking-2507", name: "Qwen 3 235B Thinking", provider: "venice", description: "Ctx: 128K | Reasoning MoE via Venice AI" },
+  { id: "venice/qwen3-235b-a22b-instruct-2507", name: "Qwen 3 235B Instruct", provider: "venice", description: "Ctx: 128K | MoE instruct via Venice AI" },
+  { id: "venice/qwen3-next-80b", name: "Qwen 3 Next 80B", provider: "venice", description: "Ctx: 256K | Strong open-weight via Venice AI" },
+  { id: "venice/qwen3-coder-480b-a35b-instruct", name: "Qwen 3 Coder 480B", provider: "venice", description: "Ctx: 256K | Coding MoE via Venice AI" },
+  { id: "venice/hermes-3-llama-3.1-405b", name: "Hermes 3 Llama 3.1 405B", provider: "venice", description: "Ctx: 128K | Large uncensored via Venice AI" },
+
+  // =====================
+  // Groq (7 models — ultra-fast inference)
+  // =====================
+  // GPT-OSS (OpenAI open-weight models)
+  { id: "groq/openai/gpt-oss-120b", name: "GPT-OSS 120B (Groq)", provider: "groq", description: "Ctx: 131K | Open-weight flagship via Groq" },
+  { id: "groq/openai/gpt-oss-20b", name: "GPT-OSS 20B (Groq)", provider: "groq", description: "Ctx: 131K | Open-weight low-latency via Groq" },
+  // Other Groq-hosted models
+  { id: "groq/llama-3.3-70b-versatile", name: "Llama 3.3 70B Versatile (Groq)", provider: "groq", description: "Ctx: 131K | Fast Llama 3.3 via Groq" },
+  { id: "groq/llama-3.1-8b-instant", name: "Llama 3.1 8B Instant (Groq)", provider: "groq", description: "Ctx: 131K | Ultra-fast small model via Groq" },
+  { id: "groq/meta-llama/llama-4-maverick-17b-128e-instruct", name: "Llama 4 Maverick (Groq)", provider: "groq", description: "Ctx: 131K | Multimodal MoE via Groq" },
+  { id: "groq/meta-llama/llama-4-scout-17b-16e-instruct", name: "Llama 4 Scout (Groq)", provider: "groq", description: "Ctx: 131K | Multimodal MoE lighter via Groq" },
+  { id: "groq/qwen/qwen3-32b", name: "Qwen 3 32B (Groq)", provider: "groq", description: "Ctx: 131K | Reasoning-capable via Groq" },
+
+  // =====================
+  // Anthropic Direct (5 models — direct API, no gateway)
+  // =====================
+  { id: "anthropic-direct/claude-opus-4-5", name: "Claude Opus 4.5 (Direct)", provider: "anthropic-direct", description: "Ctx: 200K | Direct Anthropic API" },
+  { id: "anthropic-direct/claude-sonnet-4-5", name: "Claude Sonnet 4.5 (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | Direct Anthropic API" },
+  { id: "anthropic-direct/claude-sonnet-4", name: "Claude Sonnet 4 (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | Direct Anthropic API" },
+  { id: "anthropic-direct/claude-haiku-4-5", name: "Claude Haiku 4.5 (Direct)", provider: "anthropic-direct", description: "Ctx: 200K | Direct Anthropic API" },
+  { id: "anthropic-direct/claude-opus-4-6", name: "Claude Opus 4.6 (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | No thinking" },
+  { id: "anthropic-direct/claude-opus-4-6-think-low", name: "Claude Opus 4.6 Think Low (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | 10K thinking budget" },
+  { id: "anthropic-direct/claude-opus-4-6-think-medium", name: "Claude Opus 4.6 Think Med (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | 32K thinking budget" },
+  { id: "anthropic-direct/claude-opus-4-6-think-high", name: "Claude Opus 4.6 Think High (Direct)", provider: "anthropic-direct", description: "Ctx: 1M | 128K thinking budget" },
+
+  // =====================
+  // OpenAI Direct (5 models — direct API, no gateway)
+  // =====================
+  { id: "openai-direct/gpt-5.2", name: "GPT-5.2 (Direct)", provider: "openai-direct", description: "Ctx: 400K | Direct OpenAI API" },
+  { id: "openai-direct/gpt-5.2-pro", name: "GPT-5.2 Pro (Direct)", provider: "openai-direct", description: "Ctx: 400K | Direct OpenAI API" },
+  { id: "openai-direct/gpt-4.1", name: "GPT-4.1 (Direct)", provider: "openai-direct", description: "Ctx: 1M | Direct OpenAI API" },
+  { id: "openai-direct/o3", name: "o3 (Direct)", provider: "openai-direct", description: "Ctx: 200K | Direct OpenAI API" },
+  { id: "openai-direct/o4-mini", name: "o4-mini (Direct)", provider: "openai-direct", description: "Ctx: 200K | Direct OpenAI API" },
+
+  // =====================
+  // xAI Direct (3 models — direct API, no gateway)
+  // =====================
+  { id: "xai-direct/grok-4", name: "Grok 4 (Direct)", provider: "xai-direct", description: "Ctx: 256K | Direct xAI API" },
+  { id: "xai-direct/grok-4-fast-non-reasoning", name: "Grok 4 Fast (Direct)", provider: "xai-direct", description: "Ctx: 2M | Direct xAI API" },
+  { id: "xai-direct/grok-3", name: "Grok 3 (Direct)", provider: "xai-direct", description: "Ctx: 131K | Direct xAI API" },
+
+  // =====================
+  // Google Direct (4 models — direct API via AI Studio, no gateway)
+  // =====================
+  { id: "google-direct/gemini-2.5-pro", name: "Gemini 2.5 Pro (Direct)", provider: "google-direct", description: "Ctx: 1M | Direct Google AI Studio" },
+  { id: "google-direct/gemini-2.5-flash", name: "Gemini 2.5 Flash (Direct)", provider: "google-direct", description: "Ctx: 1M | Direct Google AI Studio" },
+  { id: "google-direct/gemini-3-flash", name: "Gemini 3 Flash (Direct)", provider: "google-direct", description: "Ctx: 1M | Direct Google AI Studio" },
+  { id: "google-direct/gemini-3-pro-preview", name: "Gemini 3 Pro Preview (Direct)", provider: "google-direct", description: "Ctx: 1M | Direct Google AI Studio" },
 ];
 
 // Group models by provider for UI
