@@ -1,4 +1,5 @@
 import { gateway } from "@ai-sdk/gateway";
+import { createOpenAI } from "@ai-sdk/openai";
 import {
   customProvider,
   extractReasoningMiddleware,
@@ -7,6 +8,11 @@ import {
 import { isTestEnvironment } from "../constants";
 
 const THINKING_SUFFIX_REGEX = /-thinking$/;
+
+const venice = createOpenAI({
+  apiKey: process.env.VENICE_API_KEY,
+  baseURL: "https://api.venice.ai/api/v1",
+});
 
 export const myProvider = isTestEnvironment
   ? (() => {
@@ -30,6 +36,12 @@ export const myProvider = isTestEnvironment
 export function getLanguageModel(modelId: string) {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel(modelId);
+  }
+
+  // Route Venice models to the Venice provider
+  if (modelId.startsWith("venice/")) {
+    const veniceModelId = modelId.replace("venice/", "");
+    return venice.languageModel(veniceModelId);
   }
 
   const isReasoningModel =

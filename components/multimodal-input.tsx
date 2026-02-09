@@ -297,16 +297,6 @@ function PureMultimodalInput({
 
   return (
     <div className={cn("relative flex w-full flex-col gap-4", className)}>
-      {messages.length === 0 &&
-        attachments.length === 0 &&
-        uploadQueue.length === 0 && (
-          <SuggestedActions
-            chatId={chatId}
-            selectedVisibilityType={selectedVisibilityType}
-            sendMessage={sendMessage}
-          />
-        )}
-
       <input
         className="pointer-events-none fixed -top-4 -left-4 size-0.5 opacity-0"
         multiple
@@ -371,7 +361,7 @@ function PureMultimodalInput({
             maxHeight={200}
             minHeight={44}
             onChange={handleInput}
-            placeholder="Send a message..."
+            placeholder=""
             ref={textareaRef}
             rows={1}
             value={input}
@@ -482,7 +472,10 @@ function PureModelSelectorCompact({
     openai: "OpenAI",
     google: "Google",
     xai: "xAI",
-    reasoning: "Reasoning",
+    deepseek: "DeepSeek",
+    meta: "Meta",
+    mistral: "Mistral",
+    venice: "Venice AI",
   };
 
   return (
