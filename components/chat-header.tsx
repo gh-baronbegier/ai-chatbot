@@ -17,7 +17,7 @@ function PureChatHeader({
 
   return (
     <header
-      className="sticky top-0 w-full h-8 cursor-pointer"
+      className="hidden"
       onClick={toggleSidebar}
     />
   );

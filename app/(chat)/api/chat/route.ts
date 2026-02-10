@@ -18,7 +18,12 @@ import { getBaronLocation } from "@/lib/ai/tools/get-baron-location";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import { getAWSTools } from "@/lib/ai/mcp/aws";
+import { getGitHubTools } from "@/lib/ai/mcp/github";
 import { getNeonTools } from "@/lib/ai/mcp/neon";
+import { getNotionTools } from "@/lib/ai/mcp/notion";
+import { getTerraformTools } from "@/lib/ai/mcp/terraform";
+import { getVercelTools } from "@/lib/ai/mcp/vercel";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
@@ -38,7 +43,7 @@ import { convertToUIMessages, generateUUID } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 function getStreamContext() {
   try {
@@ -61,10 +66,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, messages, selectedChatModel, selectedVisibilityType } =
-      requestBody;
+    const {
+      id,
+      message,
+      messages,
+      selectedChatModel,
+      selectedVisibilityType,
+      thinkingBudget: clientBudget,
+      maxTokens: clientMaxTokens,
+    } = requestBody;
 
-    console.log("[chat] selectedChatModel:", selectedChatModel);
+    console.log("[chat] selectedChatModel:", selectedChatModel, "| thinkingBudget:", clientBudget, "| maxTokens:", clientMaxTokens);
 
     const session = await auth();
 
@@ -138,24 +150,51 @@ export async function POST(request: Request) {
       selectedChatModel.includes("reasoning") ||
       selectedChatModel.includes("thinking");
 
-    // Detect anthropic-direct thinking level from model ID suffix
+    // Thinking budget: client slider > model ID suffix > null
     const thinkMatch = selectedChatModel.match(/-think-(low|medium|high)$/);
-    const thinkingBudget = thinkMatch
+    let thinkingBudget = clientBudget ?? (thinkMatch
       ? { low: 10_000, medium: 32_000, high: 128_000 }[thinkMatch[1]]
-      : null;
+      : null);
     const enableThinking = isReasoningModel || thinkingBudget !== null;
+
+    // Max tokens: client slider > derived from thinking budget > defaults
+    let maxTokens = clientMaxTokens ?? (thinkingBudget
+      ? thinkingBudget + 16_000
+      : enableThinking
+        ? 26_000
+        : 16_000);
+
+    // Anthropic: max_tokens capped at 128K, and must be > budget_tokens
+    const MODEL_MAX_OUTPUT = 128_000;
+    if (maxTokens > MODEL_MAX_OUTPUT) {
+      maxTokens = MODEL_MAX_OUTPUT;
+    }
+    if (thinkingBudget && thinkingBudget >= maxTokens) {
+      // Shrink budget to leave room for response output
+      thinkingBudget = maxTokens - 1000;
+    }
+
+    console.log("[chat] resolved → enableThinking:", enableThinking, "| thinkingBudget:", thinkingBudget, "| maxTokens:", maxTokens);
 
     const modelMessages = await convertToModelMessages(uiMessages);
 
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
-        const neon = await getNeonTools();
+        const [neon, github, vercel, notion, terraform, aws] = await Promise.all([
+          getNeonTools(),
+          getGitHubTools(),
+          getVercelTools(),
+          getNotionTools(),
+          getTerraformTools(),
+          getAWSTools(),
+        ]);
 
         const result = streamText({
           model: getLanguageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
           messages: modelMessages,
+          maxTokens,
           stopWhen: stepCountIs(1000),
           experimental_activeTools: isReasoningModel
             ? []
@@ -166,6 +205,11 @@ export async function POST(request: Request) {
                 "updateDocument",
                 "requestSuggestions",
                 ...(neon.toolNames as string[]),
+                ...(github.toolNames as string[]),
+                ...(vercel.toolNames as string[]),
+                ...(notion.toolNames as string[]),
+                ...(terraform.toolNames as string[]),
+                ...(aws.toolNames as string[]),
               ] as any,
           providerOptions: enableThinking
             ? {
@@ -181,9 +225,14 @@ export async function POST(request: Request) {
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
             ...neon.tools,
+            ...github.tools,
+            ...vercel.tools,
+            ...notion.tools,
+            ...terraform.tools,
+            ...aws.tools,
           },
           onFinish: async () => {
-            await neon.cleanup();
+            await Promise.all([neon.cleanup(), github.cleanup(), vercel.cleanup(), notion.cleanup(), terraform.cleanup(), aws.cleanup()]);
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
@@ -192,6 +241,25 @@ export async function POST(request: Request) {
         });
 
         dataStream.merge(result.toUIMessageStream({ sendReasoning: true }));
+
+        result.request.then((req) => {
+          console.log("[chat] raw request body:", JSON.stringify(req.body, null, 2));
+        }).catch(() => {});
+
+        result.response.then((res) => {
+          console.log("[chat] response modelId:", res.modelId);
+          console.log("[chat] response headers:", JSON.stringify(res.headers, null, 2));
+        }).catch(() => {});
+
+        result.steps.then((steps) => {
+          for (const step of steps) {
+            console.log("[chat] raw response body:", JSON.stringify(step.response.body, null, 2));
+          }
+        }).catch(() => {});
+
+        result.usage.then((usage) => {
+          console.log("[chat] token usage:", JSON.stringify(usage));
+        }).catch(() => {});
 
         if (titlePromise) {
           const title = await titlePromise;

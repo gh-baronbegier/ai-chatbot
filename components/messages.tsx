@@ -16,7 +16,6 @@ type MessagesProps = {
   regenerate: UseChatHelpers<ChatMessage>["regenerate"];
   isReadonly: boolean;
   isArtifactVisible: boolean;
-  selectedModelId: string;
 };
 
 function PureMessages({
@@ -28,7 +27,6 @@ function PureMessages({
   setMessages,
   regenerate,
   isReadonly,
-  selectedModelId: _selectedModelId,
 }: MessagesProps) {
   const {
     containerRef: messagesContainerRef,
@@ -45,10 +43,13 @@ function PureMessages({
   return (
     <div className="relative flex-1">
       <div
-        className="absolute inset-0 touch-pan-y overflow-y-auto"
+        className="absolute inset-0 touch-pan-y overflow-y-auto overflow-x-hidden"
         ref={messagesContainerRef}
       >
         <div className="mx-auto flex min-w-0 max-w-4xl flex-col gap-4 px-2 py-4 md:gap-6 md:px-4">
+          {messages.length > 0 && (
+            <div className="shrink-0" />
+          )}
           {messages.map((message, index) => (
             <PreviewMessage
               addToolApprovalResponse={addToolApprovalResponse}
@@ -72,12 +73,7 @@ function PureMessages({
             />
           ))}
 
-          {status === "submitted" &&
-            !messages.some((msg) =>
-              msg.parts?.some(
-                (part) => "state" in part && part.state === "approval-responded"
-              )
-            ) && <ThinkingMessage />}
+          {null}
 
           <div
             className="min-h-[24px] min-w-[24px] shrink-0"
@@ -96,7 +92,7 @@ function PureMessages({
         onClick={() => scrollToBottom("smooth")}
         type="button"
       >
-        <ArrowDownIcon className="size-4" />
+        <ArrowDownIcon className="size-4 invisible" />
       </button>
     </div>
   );

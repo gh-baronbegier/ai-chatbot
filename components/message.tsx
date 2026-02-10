@@ -102,17 +102,7 @@ const PurePreviewMessage = ({
             const key = `message-${message.id}-part-${index}`;
 
             if (type === "reasoning") {
-              const hasContent = part.text?.trim().length > 0;
-              const isStreaming = "state" in part && part.state === "streaming";
-              if (hasContent || isStreaming) {
-                return (
-                  <MessageReasoning
-                    isLoading={isLoading || isStreaming}
-                    key={key}
-                    reasoning={part.text || ""}
-                  />
-                );
-              }
+              return null;
             }
 
             if (type === "text") {
@@ -360,7 +350,6 @@ export const ThinkingMessage = () => {
       <div className="flex items-start justify-start">
         <div className="flex w-full flex-col gap-2 md:gap-4">
           <div className="flex items-center gap-1 p-0 text-muted-foreground text-sm">
-            <span className="animate-pulse">Thinking</span>
             <span className="inline-flex">
               <span className="animate-bounce [animation-delay:0ms]">.</span>
               <span className="animate-bounce [animation-delay:150ms]">.</span>

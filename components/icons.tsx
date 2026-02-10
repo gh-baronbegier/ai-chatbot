@@ -284,9 +284,10 @@ export const FileIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
-export const LoaderIcon = ({ size = 16 }: { size?: number }) => {
+export const LoaderIcon = ({ size = 16, className }: { size?: number; className?: string }) => {
   return (
     <svg
+      className={className}
       height={size}
       strokeLinejoin="round"
       style={{ color: "currentcolor" }}
@@ -485,9 +486,10 @@ export const MoreIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
-export const TrashIcon = ({ size = 16 }: { size?: number }) => {
+export const TrashIcon = ({ size = 16, className }: { size?: number; className?: string }) => {
   return (
     <svg
+      className={className}
       height={size}
       strokeLinejoin="round"
       style={{ color: "currentcolor" }}
@@ -793,8 +795,9 @@ export const SidebarLeftIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-export const PlusIcon = ({ size = 16 }: { size?: number }) => (
+export const PlusIcon = ({ size = 16, className }: { size?: number; className?: string }) => (
   <svg
+    className={className}
     height={size}
     strokeLinejoin="round"
     style={{ color: "currentcolor" }}

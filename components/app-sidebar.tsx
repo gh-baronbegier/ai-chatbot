@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { PlusIcon, TrashIcon } from "@/components/icons";
+import { ModelSelectorCompact } from "@/components/model-selector-compact";
 import {
   getChatHistoryPaginationKey,
   SidebarHistory,
@@ -114,6 +115,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 </Tooltip>
               </div>
             </div>
+            <ModelSelectorCompact />
           </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>

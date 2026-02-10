@@ -3,7 +3,6 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
-import { CheckIcon } from "lucide-react";
 import {
   type ChangeEvent,
   type Dispatch,
@@ -15,43 +14,19 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import { useLocalStorage, useWindowSize } from "usehooks-ts";
-import {
-  ModelSelector,
-  ModelSelectorContent,
-  ModelSelectorGroup,
-  ModelSelectorInput,
-  ModelSelectorItem,
-  ModelSelectorList,
-  ModelSelectorLogo,
-  ModelSelectorName,
-  ModelSelectorTrigger,
-} from "@/components/ai-elements/model-selector";
-import {
-  chatModels,
-  DEFAULT_CHAT_MODEL,
-  modelsByProvider,
-} from "@/lib/ai/models";
+import { useLocalStorage } from "usehooks-ts";
 import type { Attachment, ChatMessage } from "@/lib/types";
+import { useModel } from "./model-provider";
 import { cn } from "@/lib/utils";
 import {
   PromptInput,
   PromptInputSubmit,
   PromptInputTextarea,
-  PromptInputToolbar,
-  PromptInputTools,
 } from "./elements/prompt-input";
-import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
+import { ArrowUpIcon, PaperclipIcon, PlusIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
-import { SuggestedActions } from "./suggested-actions";
 import { Button } from "./ui/button";
 import type { VisibilityType } from "./visibility-selector";
-
-function setCookie(name: string, value: string) {
-  const maxAge = 60 * 60 * 24 * 365; // 1 year
-  // biome-ignore lint/suspicious/noDocumentCookie: needed for client-side cookie setting
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}`;
-}
 
 function PureMultimodalInput({
   chatId,
@@ -66,8 +41,7 @@ function PureMultimodalInput({
   sendMessage,
   className,
   selectedVisibilityType,
-  selectedModelId,
-  onModelChange,
+  onNavToggle,
 }: {
   chatId: string;
   input: string;
@@ -81,61 +55,35 @@ function PureMultimodalInput({
   sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
   className?: string;
   selectedVisibilityType: VisibilityType;
-  selectedModelId: string;
-  onModelChange?: (modelId: string) => void;
+  onNavToggle?: () => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { width } = useWindowSize();
-
-  const adjustHeight = useCallback(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "44px";
-    }
-  }, []);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      adjustHeight();
-    }
-  }, [adjustHeight]);
-
-  const hasAutoFocused = useRef(false);
-  useEffect(() => {
-    if (!hasAutoFocused.current && width) {
-      const timer = setTimeout(() => {
-        textareaRef.current?.focus();
-        hasAutoFocused.current = true;
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [width]);
-
-  const resetHeight = useCallback(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "44px";
-    }
-  }, []);
 
   const [localStorageInput, setLocalStorageInput] = useLocalStorage(
     "input",
     ""
   );
+  const hasHydrated = useRef(false);
 
+  // Read from localStorage ONCE on mount
   useEffect(() => {
-    if (textareaRef.current) {
-      const domValue = textareaRef.current.value;
-      // Prefer DOM value over localStorage to handle hydration
-      const finalValue = domValue || localStorageInput || "";
-      setInput(finalValue);
-      adjustHeight();
+    if (!hasHydrated.current && localStorageInput) {
+      setInput(localStorageInput);
+      hasHydrated.current = true;
     }
-    // Only run once after hydration
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adjustHeight, localStorageInput, setInput]);
+  }, [localStorageInput, setInput]);
 
+  // Write input to localStorage on change (one-way, no circular trigger)
   useEffect(() => {
-    setLocalStorageInput(input);
+    if (hasHydrated.current) {
+      setLocalStorageInput(input);
+    }
   }, [input, setLocalStorageInput]);
+
+  // Single focus mechanism on mount
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
 
   const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(event.target.value);
@@ -165,23 +113,8 @@ function PureMultimodalInput({
 
     setAttachments([]);
     setLocalStorageInput("");
-    resetHeight();
     setInput("");
-
-    if (width && width > 768) {
-      textareaRef.current?.focus();
-    }
-  }, [
-    input,
-    setInput,
-    attachments,
-    sendMessage,
-    setAttachments,
-    setLocalStorageInput,
-    width,
-    chatId,
-    resetHeight,
-  ]);
+  }, [input, setInput, attachments, sendMessage, setAttachments, setLocalStorageInput, chatId]);
 
   const uploadFile = useCallback(async (file: File) => {
     const formData = new FormData();
@@ -307,7 +240,7 @@ function PureMultimodalInput({
       />
 
       <PromptInput
-        className="rounded-xl border border-border bg-background p-3 shadow-xs focus-within:border-border hover:border-muted-foreground/50"
+        className="rounded-none border border-white/15 bg-black/40 backdrop-blur-[3px] px-0 py-0 shadow-none flex flex-col justify-center"
         onSubmit={(event) => {
           event.preventDefault();
           if (!input.trim() && attachments.length === 0) {
@@ -322,7 +255,7 @@ function PureMultimodalInput({
       >
         {(attachments.length > 0 || uploadQueue.length > 0) && (
           <div
-            className="flex flex-row items-end gap-2 overflow-x-scroll"
+            className="flex flex-row items-end gap-2 overflow-x-scroll pb-1"
             data-testid="attachments-preview"
           >
             {attachments.map((attachment) => (
@@ -353,46 +286,55 @@ function PureMultimodalInput({
             ))}
           </div>
         )}
-        <div className="flex flex-row items-start gap-1 sm:gap-2">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1">
+          <button
+            className="flex size-7 items-center justify-center text-muted-foreground hover:text-foreground"
+            data-nav-toggle
+            onClick={onNavToggle}
+            type="button"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" style={{ visibility: "hidden" }}>
+              <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="2 12, 16 12" />
+              <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="2 5, 16 5" />
+            </svg>
+          </button>
           <PromptInputTextarea
-            className="grow resize-none border-0! border-none! bg-transparent p-2 text-base outline-none ring-0 [-ms-overflow-style:none] [scrollbar-width:none] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-scrollbar]:hidden"
+            autoFocus
+            className="caret-transparent min-h-0! h-auto! grow resize-none border-0! border-none! bg-transparent px-2 py-0 text-base leading-[28px] text-center outline-none ring-0 [-ms-overflow-style:none] [scrollbar-width:none] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-scrollbar]:hidden"
             data-testid="multimodal-input"
             disableAutoResize={true}
             maxHeight={200}
-            minHeight={44}
+            minHeight={0}
             onChange={handleInput}
             placeholder=""
             ref={textareaRef}
             rows={1}
             value={input}
           />
-        </div>
-        <PromptInputToolbar className="border-top-0! border-t-0! p-0 shadow-none dark:border-0 dark:border-transparent!">
-          <PromptInputTools className="gap-0 sm:gap-0.5">
-            <AttachmentsButton
-              fileInputRef={fileInputRef}
-              selectedModelId={selectedModelId}
-              status={status}
-            />
-            <ModelSelectorCompact
-              onModelChange={onModelChange}
-              selectedModelId={selectedModelId}
-            />
-          </PromptInputTools>
-
           {status === "submitted" ? (
             <StopButton setMessages={setMessages} stop={stop} />
-          ) : (
+          ) : input.trim() ? (
             <PromptInputSubmit
-              className="size-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
+              className="size-7 rounded-full bg-transparent text-muted-foreground hover:text-foreground"
               data-testid="send-button"
-              disabled={!input.trim() || uploadQueue.length > 0}
               status={status}
             >
-              <ArrowUpIcon size={14} />
+              <ArrowUpIcon size={14} className="invisible" />
             </PromptInputSubmit>
+          ) : (
+            <button
+              className="flex size-7 items-center justify-center text-muted-foreground hover:text-foreground"
+              data-testid="attachments-button"
+              onClick={(event) => {
+                event.preventDefault();
+                fileInputRef.current?.click();
+              }}
+              type="button"
+            >
+              <PlusIcon size={14} className="invisible" />
+            </button>
           )}
-        </PromptInputToolbar>
+        </div>
       </PromptInput>
     </div>
   );
@@ -413,9 +355,6 @@ export const MultimodalInput = memo(
     if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType) {
       return false;
     }
-    if (prevProps.selectedModelId !== nextProps.selectedModelId) {
-      return false;
-    }
 
     return true;
   }
@@ -424,18 +363,17 @@ export const MultimodalInput = memo(
 function PureAttachmentsButton({
   fileInputRef,
   status,
-  selectedModelId,
 }: {
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
   status: UseChatHelpers<ChatMessage>["status"];
-  selectedModelId: string;
 }) {
+  const { currentModelId } = useModel();
   const isReasoningModel =
-    selectedModelId.includes("reasoning") || selectedModelId.includes("think");
+    currentModelId.includes("reasoning") || currentModelId.includes("think");
 
   return (
     <Button
-      className="aspect-square h-8 rounded-lg p-1 hover:bg-accent"
+      className="aspect-square h-8 rounded-full p-1 hover:bg-accent"
       data-testid="attachments-button"
       disabled={status !== "ready" || isReasoningModel}
       onClick={(event) => {
@@ -451,87 +389,6 @@ function PureAttachmentsButton({
 
 const AttachmentsButton = memo(PureAttachmentsButton);
 
-function PureModelSelectorCompact({
-  selectedModelId,
-  onModelChange,
-}: {
-  selectedModelId: string;
-  onModelChange?: (modelId: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  const selectedModel =
-    chatModels.find((m) => m.id === selectedModelId) ??
-    chatModels.find((m) => m.id === DEFAULT_CHAT_MODEL) ??
-    chatModels[0];
-  const [rawProvider] = selectedModel.id.split("/");
-  const provider = rawProvider.replace(/-direct$/, "");
-
-  // Provider display names
-  const providerNames: Record<string, string> = {
-    anthropic: "Anthropic",
-    openai: "OpenAI",
-    google: "Google",
-    xai: "xAI",
-    deepseek: "DeepSeek",
-    meta: "Meta",
-    mistral: "Mistral",
-    venice: "Venice AI",
-    groq: "Groq",
-    "anthropic-direct": "Anthropic (Direct)",
-    "openai-direct": "OpenAI (Direct)",
-    "xai-direct": "xAI (Direct)",
-    "google-direct": "Google (Direct)",
-  };
-
-  return (
-    <ModelSelector onOpenChange={setOpen} open={open}>
-      <ModelSelectorTrigger asChild>
-        <Button className="h-8 w-[200px] justify-between px-2" variant="ghost">
-          {provider && <ModelSelectorLogo provider={provider} />}
-          <ModelSelectorName>{selectedModel.name}</ModelSelectorName>
-        </Button>
-      </ModelSelectorTrigger>
-      <ModelSelectorContent>
-        <ModelSelectorInput placeholder="Search models..." />
-        <ModelSelectorList>
-          {Object.entries(modelsByProvider).map(
-            ([providerKey, providerModels]) => (
-              <ModelSelectorGroup
-                heading={providerNames[providerKey] ?? providerKey}
-                key={providerKey}
-              >
-                {providerModels.map((model) => {
-                  const logoProvider = model.id.split("/")[0].replace(/-direct$/, "");
-                  return (
-                    <ModelSelectorItem
-                      key={model.id}
-                      onSelect={() => {
-                        onModelChange?.(model.id);
-                        setCookie("chat-model", model.id);
-                        setOpen(false);
-                      }}
-                      value={model.id}
-                    >
-                      <ModelSelectorLogo provider={logoProvider} />
-                      <ModelSelectorName>{model.name}</ModelSelectorName>
-                      {model.id === selectedModel.id && (
-                        <CheckIcon className="ml-auto size-4" />
-                      )}
-                    </ModelSelectorItem>
-                  );
-                })}
-              </ModelSelectorGroup>
-            )
-          )}
-        </ModelSelectorList>
-      </ModelSelectorContent>
-    </ModelSelector>
-  );
-}
-
-const ModelSelectorCompact = memo(PureModelSelectorCompact);
-
 function PureStopButton({
   stop,
   setMessages,
@@ -540,8 +397,8 @@ function PureStopButton({
   setMessages: UseChatHelpers<ChatMessage>["setMessages"];
 }) {
   return (
-    <Button
-      className="size-7 rounded-full bg-foreground p-1 text-background hover:bg-foreground/90 disabled:bg-muted disabled:text-muted-foreground"
+    <button
+      className="flex items-center justify-center size-7"
       data-testid="stop-button"
       onClick={(event) => {
         event.preventDefault();
@@ -549,8 +406,8 @@ function PureStopButton({
         setMessages((messages) => messages);
       }}
     >
-      <StopIcon size={14} />
-    </Button>
+      <div className="size-3.5 bg-white invisible" />
+    </button>
   );
 }
 

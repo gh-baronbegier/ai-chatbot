@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { ChatHeader } from "@/components/chat-header";
@@ -20,6 +20,7 @@ import {
 import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
+import { useModel } from "./model-provider";
 import type { Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { Attachment, ChatMessage } from "@/lib/types";
@@ -28,6 +29,7 @@ import { Artifact } from "./artifact";
 import { useDataStream } from "./data-stream-provider";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
+import { NavPanel } from "./nav-panel";
 import { getChatHistoryPaginationKey } from "./sidebar-history";
 import { toast } from "./toast";
 import type { VisibilityType } from "./visibility-selector";
@@ -35,14 +37,12 @@ import type { VisibilityType } from "./visibility-selector";
 export function Chat({
   id,
   initialMessages,
-  initialChatModel,
   initialVisibilityType,
   isReadonly,
   autoResume,
 }: {
   id: string;
   initialMessages: ChatMessage[];
-  initialChatModel: string;
   initialVisibilityType: VisibilityType;
   isReadonly: boolean;
   autoResume: boolean;
@@ -70,12 +70,22 @@ export function Chat({
 
   const [input, setInput] = useState<string>("");
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
-  const [currentModelId, setCurrentModelId] = useState(initialChatModel);
+  const { currentModelId, thinkingBudget, maxTokens } = useModel();
   const currentModelIdRef = useRef(currentModelId);
+  const thinkingBudgetRef = useRef(thinkingBudget);
+  const maxTokensRef = useRef(maxTokens);
 
   useEffect(() => {
     currentModelIdRef.current = currentModelId;
   }, [currentModelId]);
+
+  useEffect(() => {
+    thinkingBudgetRef.current = thinkingBudget;
+  }, [thinkingBudget]);
+
+  useEffect(() => {
+    maxTokensRef.current = maxTokens;
+  }, [maxTokens]);
 
   const {
     messages,
@@ -126,6 +136,8 @@ export function Chat({
               : { message: lastMessage }),
             selectedChatModel: currentModelIdRef.current,
             selectedVisibilityType: visibilityType,
+            thinkingBudget: thinkingBudgetRef.current,
+            maxTokens: maxTokensRef.current,
             ...request.body,
           },
         };
@@ -176,6 +188,9 @@ export function Chat({
   );
 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isNavPanelOpen, setIsNavPanelOpen] = useState(false);
+  const toggleNavPanel = useCallback(() => setIsNavPanelOpen((prev) => !prev), []);
+  const closeNavPanel = useCallback(() => setIsNavPanelOpen(false), []);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
 
   useAutoResume({
@@ -187,13 +202,7 @@ export function Chat({
 
   return (
     <>
-      <div className="overscroll-behavior-contain flex h-dvh min-w-0 touch-pan-y flex-col bg-background">
-        <ChatHeader
-          chatId={id}
-          isReadonly={isReadonly}
-          selectedVisibilityType={initialVisibilityType}
-        />
-
+      <div className="overscroll-behavior-contain flex h-dvh w-full min-w-0 touch-pan-y flex-col bg-background">
         <Messages
           addToolApprovalResponse={addToolApprovalResponse}
           chatId={id}
@@ -201,21 +210,19 @@ export function Chat({
           isReadonly={isReadonly}
           messages={messages}
           regenerate={regenerate}
-          selectedModelId={initialChatModel}
           setMessages={setMessages}
           status={status}
           votes={votes}
         />
 
-        <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4">
+        <div className={`fixed top-0 inset-x-0 z-1 mx-auto flex flex-col max-w-4xl border-t-0 px-[0.375rem] pb-0${isNavPanelOpen ? " bottom-0" : ""}`}>
           {!isReadonly && (
             <MultimodalInput
               attachments={attachments}
               chatId={id}
               input={input}
               messages={messages}
-              onModelChange={setCurrentModelId}
-              selectedModelId={currentModelId}
+              onNavToggle={toggleNavPanel}
               selectedVisibilityType={visibilityType}
               sendMessage={sendMessage}
               setAttachments={setAttachments}
@@ -225,6 +232,7 @@ export function Chat({
               stop={stop}
             />
           )}
+          <NavPanel isOpen={isNavPanelOpen} onClose={closeNavPanel} />
         </div>
       </div>
 
@@ -236,7 +244,6 @@ export function Chat({
         isReadonly={isReadonly}
         messages={messages}
         regenerate={regenerate}
-        selectedModelId={currentModelId}
         selectedVisibilityType={visibilityType}
         sendMessage={sendMessage}
         setAttachments={setAttachments}

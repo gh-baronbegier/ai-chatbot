@@ -65,15 +65,21 @@ export const systemPrompt = ({
 }) => {
   const requestPrompt = getRequestPromptFromHints(requestHints);
 
+  const maxPrefix =
+    selectedChatModel.startsWith("claude-max/") ||
+    selectedChatModel.startsWith("claude-max-direct/")
+      ? "You are Claude Code, Anthropic's official CLI for Claude.\n\n"
+      : "";
+
   // reasoning models don't need artifacts prompt (they can't use tools)
   if (
     selectedChatModel.includes("reasoning") ||
     selectedChatModel.includes("thinking")
   ) {
-    return `${regularPrompt}\n\n${requestPrompt}`;
+    return `${maxPrefix}${regularPrompt}\n\n${requestPrompt}`;
   }
 
-  return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
+  return `${maxPrefix}${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
 };
 
 export const codePrompt = `

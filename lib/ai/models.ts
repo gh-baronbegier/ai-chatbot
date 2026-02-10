@@ -1,5 +1,5 @@
 // Curated list of top models from Vercel AI Gateway
-export const DEFAULT_CHAT_MODEL = "groq/openai/gpt-oss-120b";
+export const DEFAULT_CHAT_MODEL = "claude-max-direct/claude-opus-4-6-think-medium";
 
 export type ChatModel = {
   id: string;
@@ -219,6 +219,21 @@ export const chatModels: ChatModel[] = [
   { id: "claude-max/claude-sonnet-4-5-think-high", name: "Sonnet 4.5 Think High (MAX)", provider: "claude-max", description: "Ctx: 1M | 128K thinking budget" },
   { id: "claude-max/claude-sonnet-4-0", name: "Claude Sonnet 4 (MAX)", provider: "claude-max", description: "Ctx: 1M | MAX flat-rate + tools" },
   { id: "claude-max/claude-haiku-4-5", name: "Claude Haiku 4.5 (MAX)", provider: "claude-max", description: "Ctx: 200K | MAX flat-rate + tools" },
+
+  // =====================
+  // Claude MAX Direct (inline OAuth — no proxy, flat-rate, full tool support)
+  // =====================
+  { id: "claude-max-direct/claude-opus-4-6", name: "Claude Opus 4.6 (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 1M | MAX OAuth, no proxy" },
+  { id: "claude-max-direct/claude-opus-4-6-think-low", name: "Opus 4.6 Think Low (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 1M | 10K thinking budget" },
+  { id: "claude-max-direct/claude-opus-4-6-think-medium", name: "Opus 4.6 Think Med (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 1M | 32K thinking budget" },
+  { id: "claude-max-direct/claude-opus-4-6-think-high", name: "Opus 4.6 Think High (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 1M | 128K thinking budget" },
+  { id: "claude-max-direct/claude-opus-4-5", name: "Claude Opus 4.5 (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 200K | MAX OAuth, no proxy" },
+  { id: "claude-max-direct/claude-sonnet-4-5", name: "Claude Sonnet 4.5 (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 1M | MAX OAuth, no proxy" },
+  { id: "claude-max-direct/claude-sonnet-4-5-think-low", name: "Sonnet 4.5 Think Low (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 1M | 10K thinking budget" },
+  { id: "claude-max-direct/claude-sonnet-4-5-think-medium", name: "Sonnet 4.5 Think Med (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 1M | 32K thinking budget" },
+  { id: "claude-max-direct/claude-sonnet-4-5-think-high", name: "Sonnet 4.5 Think High (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 1M | 128K thinking budget" },
+  { id: "claude-max-direct/claude-sonnet-4-0", name: "Claude Sonnet 4 (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 1M | MAX OAuth, no proxy" },
+  { id: "claude-max-direct/claude-haiku-4-5", name: "Claude Haiku 4.5 (MAX Direct)", provider: "claude-max-direct", description: "Ctx: 200K | MAX OAuth, no proxy" },
 ];
 
 // Group models by provider for UI
