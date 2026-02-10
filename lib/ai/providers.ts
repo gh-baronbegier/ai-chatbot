@@ -1,48 +1,7 @@
-import { gateway } from "@ai-sdk/gateway";
-import { createGroq } from "@ai-sdk/groq";
-import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { createXai } from "@ai-sdk/xai";
-import {
-  customProvider,
-  extractReasoningMiddleware,
-  wrapLanguageModel,
-} from "ai";
+import { customProvider } from "ai";
 import { isTestEnvironment } from "../constants";
 import { getMaxAccessToken } from "./max-oauth";
-
-const THINKING_SUFFIX_REGEX = /-thinking$/;
-
-const venice = createOpenAI({
-  apiKey: process.env.VENICE_API_KEY,
-  baseURL: "https://api.venice.ai/api/v1",
-});
-
-const groq = createGroq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
-const anthropicDirect = createAnthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-const openaiDirect = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const xaiDirect = createXai({
-  apiKey: process.env.XAI_API_KEY,
-});
-
-const googleDirect = createGoogleGenerativeAI({
-  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-});
-
-const claudeMax = createAnthropic({
-  baseURL: process.env.CLAUDE_MAX_URL || "http://localhost:3456/v1",
-  apiKey: "max-plan",
-});
 
 const CLAUDE_MAX_BETA_FLAGS =
   "oauth-2025-04-20,claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14";
@@ -236,75 +195,12 @@ export function getLanguageModel(modelId: string) {
     return myProvider.languageModel(modelId);
   }
 
-  // Route Venice models to the Venice provider (use .chat() for /chat/completions compatibility)
-  if (modelId.startsWith("venice/")) {
-    const veniceModelId = modelId.replace("venice/", "");
-    return venice.chat(veniceModelId);
-  }
-
-  // Route Groq models to the Groq provider
-  if (modelId.startsWith("groq/")) {
-    const groqModelId = modelId.slice(5); // strip "groq/" prefix
-    return groq.languageModel(groqModelId);
-  }
-
-  // Route direct Anthropic models (strip -think-low/medium/high suffix)
-  if (modelId.startsWith("anthropic-direct/")) {
-    const anthropicModelId = modelId
-      .slice("anthropic-direct/".length)
-      .replace(/-think-(low|medium|high)$/, "");
-    return anthropicDirect.languageModel(anthropicModelId);
-  }
-
-  // Route direct OpenAI models
-  if (modelId.startsWith("openai-direct/")) {
-    const openaiModelId = modelId.slice("openai-direct/".length);
-    return openaiDirect.languageModel(openaiModelId);
-  }
-
-  // Route direct xAI models
-  if (modelId.startsWith("xai-direct/")) {
-    const xaiModelId = modelId.slice("xai-direct/".length);
-    return xaiDirect.languageModel(xaiModelId);
-  }
-
-  // Route Claude MAX models (via anthropic-max-router proxy — flat-rate, with tools)
+  // All models route through claude-max-direct
   // Strip -think-low/medium/high suffix (thinking budget handled in chat route)
-  if (modelId.startsWith("claude-max/")) {
-    const maxModelId = modelId
-      .slice("claude-max/".length)
-      .replace(/-think-(low|medium|high)$/, "");
-    return claudeMax.languageModel(maxModelId);
-  }
-
-  // Route Claude MAX Direct models (inline OAuth — no proxy needed)
-  // Strip -think-low/medium/high suffix (thinking budget handled in chat route)
-  if (modelId.startsWith("claude-max-direct/")) {
-    const maxModelId = modelId
-      .slice("claude-max-direct/".length)
-      .replace(/-think-(low|medium|high)$/, "");
-    return claudeMaxDirect.languageModel(maxModelId);
-  }
-
-  // Route direct Google models
-  if (modelId.startsWith("google-direct/")) {
-    const googleModelId = modelId.slice("google-direct/".length);
-    return googleDirect.languageModel(googleModelId);
-  }
-
-  const isReasoningModel =
-    modelId.includes("reasoning") || modelId.endsWith("-thinking");
-
-  if (isReasoningModel) {
-    const gatewayModelId = modelId.replace(THINKING_SUFFIX_REGEX, "");
-
-    return wrapLanguageModel({
-      model: gateway.languageModel(gatewayModelId),
-      middleware: extractReasoningMiddleware({ tagName: "thinking" }),
-    });
-  }
-
-  return gateway.languageModel(modelId);
+  const maxModelId = modelId
+    .replace(/^claude-max-direct\//, "")
+    .replace(/-think-(low|medium|high)$/, "");
+  return claudeMaxDirect.languageModel(maxModelId);
 }
 
 export function getTitleModel() {
@@ -318,5 +214,5 @@ export function getArtifactModel() {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel("artifact-model");
   }
-  return gateway.languageModel("anthropic/claude-haiku-4.5");
+  return getLanguageModel("claude-max-direct/claude-haiku-4-5");
 }

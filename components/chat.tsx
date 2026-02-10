@@ -22,6 +22,7 @@ import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import { useModel } from "./model-provider";
+import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import type { Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { Attachment, ChatMessage } from "@/lib/types";
@@ -71,14 +72,9 @@ export function Chat({
 
   const [input, setInput] = useState<string>("");
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
-  const { currentModelId, thinkingBudget, maxTokens } = useModel();
-  const currentModelIdRef = useRef(currentModelId);
+  const { thinkingBudget, maxTokens } = useModel();
   const thinkingBudgetRef = useRef(thinkingBudget);
   const maxTokensRef = useRef(maxTokens);
-
-  useEffect(() => {
-    currentModelIdRef.current = currentModelId;
-  }, [currentModelId]);
 
   useEffect(() => {
     thinkingBudgetRef.current = thinkingBudget;
@@ -135,7 +131,7 @@ export function Chat({
             ...(isToolApprovalContinuation
               ? { messages: request.messages }
               : { message: lastMessage }),
-            selectedChatModel: currentModelIdRef.current,
+            selectedChatModel: DEFAULT_CHAT_MODEL,
             selectedVisibilityType: visibilityType,
             thinkingBudget: thinkingBudgetRef.current,
             maxTokens: maxTokensRef.current,

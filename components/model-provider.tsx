@@ -6,11 +6,9 @@ import {
   useContext,
   useState,
 } from "react";
-import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+
 
 type ModelContextValue = {
-  currentModelId: string;
-  setCurrentModelId: (modelId: string) => void;
   thinkingBudget: number;
   setThinkingBudget: (v: number) => void;
   maxTokens: number;
@@ -26,24 +24,16 @@ function setCookie(name: string, value: string) {
 }
 
 export function ModelProvider({
-  initialModelId,
   initialThinkingBudget,
   initialMaxTokens,
   children,
 }: {
-  initialModelId: string;
   initialThinkingBudget: number;
   initialMaxTokens: number;
   children: ReactNode;
 }) {
-  const [currentModelId, _setCurrentModelId] = useState(initialModelId);
   const [thinkingBudget, _setThinkingBudget] = useState(initialThinkingBudget);
   const [maxTokens, _setMaxTokens] = useState(initialMaxTokens);
-
-  const setCurrentModelId = (modelId: string) => {
-    _setCurrentModelId(modelId);
-    setCookie("chat-model", modelId);
-  };
 
   const setThinkingBudget = (v: number) => {
     _setThinkingBudget(v);
@@ -58,8 +48,6 @@ export function ModelProvider({
   return (
     <ModelContext.Provider
       value={{
-        currentModelId,
-        setCurrentModelId,
         thinkingBudget,
         setThinkingBudget,
         maxTokens,

@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { DataStreamProvider } from "@/components/data-stream-provider";
 import { ModelProvider } from "@/components/model-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+
 import { auth } from "../(auth)/auth";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -27,14 +27,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 async function SidebarWrapper({ children }: { children: React.ReactNode }) {
   const [session, cookieStore] = await Promise.all([auth(), cookies()]);
   const isCollapsed = cookieStore.get("sidebar_state")?.value !== "true";
-  const chatModel = cookieStore.get("chat-model")?.value ?? DEFAULT_CHAT_MODEL;
   const thinkingBudget = Number(cookieStore.get("chat-thinking-budget")?.value) || 128_000;
   const maxTokens = Number(cookieStore.get("chat-max-tokens")?.value) || 128_000;
 
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>
       <ModelProvider
-        initialModelId={chatModel}
         initialThinkingBudget={thinkingBudget}
         initialMaxTokens={maxTokens}
       >

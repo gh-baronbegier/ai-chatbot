@@ -3,6 +3,8 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
+import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   type ChangeEvent,
   type Dispatch,
@@ -16,7 +18,8 @@ import {
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import type { Attachment, ChatMessage } from "@/lib/types";
-import { useModel } from "./model-provider";
+import { guestRegex } from "@/lib/constants";
+import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { cn } from "@/lib/utils";
 import {
   PromptInput,
@@ -25,6 +28,7 @@ import {
 } from "./elements/prompt-input";
 import { ArrowUpIcon, PaperclipIcon, PlusIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
+import { toast as toastAction } from "./toast";
 import { Button } from "./ui/button";
 import type { VisibilityType } from "./visibility-selector";
 
@@ -233,6 +237,67 @@ function PureMultimodalInput({
     return () => textarea.removeEventListener("paste", handlePaste);
   }, [handlePaste]);
 
+  const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
+  const isGuest = guestRegex.test(session?.user?.email ?? "");
+
+  if (isNavPanelOpen) {
+    return (
+      <div className={cn("relative flex w-full flex-col gap-4", className)}>
+        <div className="rounded-none border border-white bg-black/40 backdrop-blur-[3px] px-0 py-0 flex flex-col justify-center">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1">
+            <button
+              className="flex size-7 items-center justify-center text-white"
+              data-nav-toggle
+              onClick={onNavToggle}
+              type="button"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18">
+                <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="3.5 15, 15 3.5" />
+                <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="3.5 3.5, 15 15" />
+              </svg>
+            </button>
+            <div className="flex items-center justify-center">
+              <button
+                className="text-sm text-white px-2"
+                onClick={() => {
+                  if (sessionStatus === "loading") {
+                    toastAction({
+                      type: "error",
+                      description:
+                        "Checking authentication status, please try again!",
+                    });
+                    return;
+                  }
+                  if (isGuest) {
+                    router.push("/login");
+                  } else {
+                    signOut({ redirectTo: "/" });
+                  }
+                }}
+                type="button"
+              >
+                {isGuest ? "Login" : "Sign out"}
+              </button>
+            </div>
+            <button
+              className="flex size-7 items-center justify-center text-white"
+              onClick={() => {
+                router.push("/");
+                router.refresh();
+                onNavToggle?.();
+              }}
+              title="New Chat"
+              type="button"
+            >
+              <PlusIcon size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("relative flex w-full flex-col gap-4", className)}>
       <input
@@ -293,22 +358,15 @@ function PureMultimodalInput({
         )}
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1">
           <button
-            className={`flex size-7 items-center justify-center ${isNavPanelOpen ? "text-white" : "text-muted-foreground hover:text-foreground"}`}
+            className="flex size-7 items-center justify-center text-muted-foreground hover:text-foreground"
             data-nav-toggle
             onClick={onNavToggle}
             type="button"
           >
-            {isNavPanelOpen ? (
-              <svg width="18" height="18" viewBox="0 0 18 18">
-                <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="3.5 15, 15 3.5" />
-                <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="3.5 3.5, 15 15" />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 18 18" style={{ visibility: "hidden" }}>
-                <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="2 12, 16 12" />
-                <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="2 5, 16 5" />
-              </svg>
-            )}
+            <svg width="18" height="18" viewBox="0 0 18 18" style={{ visibility: "hidden" }}>
+              <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="2 12, 16 12" />
+              <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="2 5, 16 5" />
+            </svg>
           </button>
           <PromptInputTextarea
             autoFocus
@@ -382,9 +440,8 @@ function PureAttachmentsButton({
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
   status: UseChatHelpers<ChatMessage>["status"];
 }) {
-  const { currentModelId } = useModel();
   const isReasoningModel =
-    currentModelId.includes("reasoning") || currentModelId.includes("think");
+    DEFAULT_CHAT_MODEL.includes("reasoning") || DEFAULT_CHAT_MODEL.includes("think");
 
   return (
     <Button
