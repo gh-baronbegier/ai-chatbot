@@ -4,7 +4,7 @@ import { CheckIcon, ChevronRight, ChevronDown } from "lucide-react";
 import { isToday, isYesterday, subMonths, subWeeks } from "date-fns";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useTheme } from "next-themes";
+// import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast as sonnerToast } from "sonner";
 import { useSWRConfig } from "swr";
@@ -32,6 +32,17 @@ import {
   TrashIcon,
 } from "./icons";
 import { useModel } from "./model-provider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import {
   getChatHistoryPaginationKey,
   type ChatHistory,
@@ -130,7 +141,7 @@ const columns: GridColDef[] = [
 
 // --- Main component ---
 
-type NavView = "chat" | "model";
+// type NavView = "chat" | "model";
 
 export default function NavPanelContent({
   onNavigate,
@@ -140,7 +151,7 @@ export default function NavPanelContent({
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, status: sessionStatus } = useSession();
-  const { setTheme, resolvedTheme } = useTheme();
+  // const { setTheme, resolvedTheme } = useTheme();
   const { mutate: globalMutate } = useSWRConfig();
   const {
     currentModelId,
@@ -151,8 +162,8 @@ export default function NavPanelContent({
     setMaxTokens,
   } = useModel();
 
-  const [view, setView] = useState<NavView>("chat");
-  const [modelSearch, setModelSearch] = useState("");
+  // const [view, setView] = useState<NavView>("chat");
+  // const [modelSearch, setModelSearch] = useState("");
 
   const activeChatId = pathname?.startsWith("/chat/")
     ? pathname.split("/")[2]
@@ -168,14 +179,14 @@ export default function NavPanelContent({
   const displayName = recommendedMatch?.name ?? selectedModel.name;
 
 
-  // --- Filtered models for search ---
-  const filteredProviders = useMemo(() => {
-    const q = modelSearch.toLowerCase();
-    if (!q) return Object.entries(modelsByProvider);
-    return Object.entries(modelsByProvider)
-      .map(([key, models]) => [key, models.filter((m) => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q))] as const)
-      .filter(([, models]) => models.length > 0);
-  }, [modelSearch]);
+  // --- Filtered models for search (commented out — now using dropdown) ---
+  // const filteredProviders = useMemo(() => {
+  //   const q = modelSearch.toLowerCase();
+  //   if (!q) return Object.entries(modelsByProvider);
+  //   return Object.entries(modelsByProvider)
+  //     .map(([key, models]) => [key, models.filter((m) => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q))] as const)
+  //     .filter(([, models]) => models.length > 0);
+  // }, [modelSearch]);
 
   // --- Chat history ---
   const {
@@ -300,22 +311,50 @@ export default function NavPanelContent({
   return (
     <>
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Header — current model button */}
+        {/* Header — dropdown model selector */}
         <div className="flex shrink-0 justify-center p-2">
-          <button
-            className="flex h-8 items-center gap-2 px-2 text-sm cursor-pointer text-white/70 hover:text-white"
-            onClick={() => {
-              if (view === "model") {
-                setView("chat");
-                setModelSearch("");
-              } else {
-                setView("model");
-              }
-            }}
-            type="button"
-          >
-            <span className="truncate">{displayName}</span>
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex h-8 items-center gap-1 px-2 text-sm cursor-pointer text-white/70 hover:text-white"
+                type="button"
+              >
+                <span className="truncate">{displayName}</span>
+                <ChevronDown size={14} className="shrink-0 opacity-50" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="max-h-[70vh] overflow-y-auto w-64">
+              <DropdownMenuLabel>Recommended</DropdownMenuLabel>
+              {recommendedModels.map((rec) => (
+                <DropdownMenuItem
+                  key={rec.id}
+                  onSelect={() => setCurrentModelId(rec.id)}
+                >
+                  <span className="flex-1 truncate">{rec.name}</span>
+                  {selectedModel.id === rec.id && <CheckIcon className="ml-auto size-4 shrink-0" />}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              {Object.entries(modelsByProvider).map(([providerKey, providerModels]) => (
+                <DropdownMenuSub key={providerKey}>
+                  <DropdownMenuSubTrigger>
+                    {providerNames[providerKey] ?? providerKey}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="max-h-[60vh] overflow-y-auto">
+                    {providerModels.map((model) => (
+                      <DropdownMenuItem
+                        key={model.id}
+                        onSelect={() => setCurrentModelId(model.id)}
+                      >
+                        <span className="flex-1 truncate">{model.name}</span>
+                        {model.id === selectedModel.id && <CheckIcon className="ml-auto size-4 shrink-0" />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Thinking / Max tokens sliders */}
@@ -352,117 +391,34 @@ export default function NavPanelContent({
           </div>
         </div>
 
-        {/* Scrollable middle */}
+        {/* Chat action bar — always visible, not scrollable */}
+        <div className="shrink-0 px-2">
+          <div className="flex items-center justify-between">
+            <button
+              className="flex size-8 items-center justify-center rounded-md text-white/50 hover:bg-white/10 hover:text-white"
+              onClick={() => {
+                router.push("/");
+                router.refresh();
+                onNavigate();
+              }}
+              title="New Chat"
+              type="button"
+            >
+              <PlusIcon size={14} className="invisible" />
+            </button>
+            <button
+              className="flex size-8 items-center justify-center rounded-md text-white/50 hover:bg-white/10 hover:text-white"
+              onClick={() => setShowDeleteAllDialog(true)}
+              title="Delete All Chats"
+              type="button"
+            >
+              <TrashIcon size={14} className="invisible" />
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable chat history */}
         <div className="flex-1 overflow-y-auto p-2">
-          {view === "model" ? (
-            /* --- Inline model picker --- */
-            <div className="flex flex-col">
-              <input
-                autoFocus
-                className="mb-2 h-8 w-full rounded-md bg-white/5 px-2 text-sm text-white placeholder-white/40 outline-none"
-                onChange={(e) => setModelSearch(e.target.value)}
-                placeholder="Search models..."
-                type="text"
-                value={modelSearch}
-              />
-              {/* Recommended models */}
-              {(() => {
-                const recommended = recommendedModels;
-                const q = modelSearch.toLowerCase();
-                const filtered = q ? recommended.filter((m) => m.name.toLowerCase().includes(q)) : recommended;
-                if (filtered.length === 0) return null;
-                return (
-                  <div className="mb-2">
-                    <div className="px-2 py-1 text-xs text-white/50">
-                      Recommended
-                    </div>
-                    {filtered.map((rec) => {
-                      const isSelected = selectedModel.id === rec.id;
-                      return (
-                        <button
-                          className={cn(
-                            "flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm",
-                            isSelected
-                              ? "bg-white/10 text-white"
-                              : "text-white/70 hover:bg-white/10 hover:text-white"
-                          )}
-                          key={rec.id}
-                          onClick={() => {
-                            setCurrentModelId(rec.id);
-                            setView("chat");
-                            setModelSearch("");
-                          }}
-                          type="button"
-                        >
-                          <span className="flex-1 truncate text-left">{rec.name}</span>
-                          {isSelected && <CheckIcon className="ml-auto size-4 shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-              {filteredProviders.map(([providerKey, providerModels]) => (
-                <div key={providerKey} className="mb-2">
-                  <div className="px-2 py-1 text-xs text-white/50">
-                    {providerNames[providerKey] ?? providerKey}
-                  </div>
-                  {providerModels.map((model) => {
-                    const isSelected = model.id === selectedModel.id;
-                    return (
-                      <button
-                        className={cn(
-                          "flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm",
-                          isSelected
-                            ? "bg-white/10 text-white"
-                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                        )}
-                        key={model.id}
-                        onClick={() => {
-                          setCurrentModelId(model.id);
-                          setView("chat");
-                          setModelSearch("");
-                        }}
-                        type="button"
-                      >
-                        <span className="flex-1 truncate text-left">{model.name}</span>
-                        {isSelected && <CheckIcon className="ml-auto size-4 shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-              {filteredProviders.length === 0 && (
-                <div className="px-2 py-4 text-center text-sm text-white/50">
-                  No models found
-                </div>
-              )}
-            </div>
-          ) : (
-            /* --- Chat history --- */
-            <>
-              <div className="flex items-center justify-between">
-                <button
-                  className="flex size-8 items-center justify-center rounded-md text-white/50 hover:bg-white/10 hover:text-white"
-                  onClick={() => {
-                    router.push("/");
-                    router.refresh();
-                    onNavigate();
-                  }}
-                  title="New Chat"
-                  type="button"
-                >
-                  <PlusIcon size={14} className="invisible" />
-                </button>
-                <button
-                  className="flex size-8 items-center justify-center rounded-md text-white/50 hover:bg-white/10 hover:text-white"
-                  onClick={() => setShowDeleteAllDialog(true)}
-                  title="Delete All Chats"
-                  type="button"
-                >
-                  <TrashIcon size={14} className="invisible" />
-                </button>
-              </div>
               {isLoading ? (
                 <div className="flex items-center gap-2 p-2 text-sm text-white/50">
                   <div className="animate-spin">
@@ -608,8 +564,6 @@ export default function NavPanelContent({
                   )}
                 </>
               )}
-            </>
-          )}
         </div>
 
         {/* Footer */}

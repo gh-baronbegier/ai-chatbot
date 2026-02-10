@@ -41,7 +41,9 @@ function PureMultimodalInput({
   sendMessage,
   className,
   selectedVisibilityType,
+  isNavPanelOpen,
   onNavToggle,
+  textareaRef: externalTextareaRef,
 }: {
   chatId: string;
   input: string;
@@ -55,9 +57,12 @@ function PureMultimodalInput({
   sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
   className?: string;
   selectedVisibilityType: VisibilityType;
+  isNavPanelOpen?: boolean;
   onNavToggle?: () => void;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const internalTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = externalTextareaRef ?? internalTextareaRef;
 
   const [localStorageInput, setLocalStorageInput] = useLocalStorage(
     "input",
@@ -240,7 +245,7 @@ function PureMultimodalInput({
       />
 
       <PromptInput
-        className="rounded-none border border-white/15 bg-black/40 backdrop-blur-[3px] px-0 py-0 shadow-none flex flex-col justify-center"
+        className="rounded-none border border-white bg-black/40 backdrop-blur-[3px] px-0 py-0 shadow-none flex flex-col justify-center"
         onSubmit={(event) => {
           event.preventDefault();
           if (!input.trim() && attachments.length === 0) {
@@ -288,15 +293,22 @@ function PureMultimodalInput({
         )}
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1">
           <button
-            className="flex size-7 items-center justify-center text-muted-foreground hover:text-foreground"
+            className={`flex size-7 items-center justify-center ${isNavPanelOpen ? "text-white" : "text-muted-foreground hover:text-foreground"}`}
             data-nav-toggle
             onClick={onNavToggle}
             type="button"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" style={{ visibility: "hidden" }}>
-              <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="2 12, 16 12" />
-              <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="2 5, 16 5" />
-            </svg>
+            {isNavPanelOpen ? (
+              <svg width="18" height="18" viewBox="0 0 18 18">
+                <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="3.5 15, 15 3.5" />
+                <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="3.5 3.5, 15 15" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 18 18" style={{ visibility: "hidden" }}>
+                <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="2 12, 16 12" />
+                <polyline fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" points="2 5, 16 5" />
+              </svg>
+            )}
           </button>
           <PromptInputTextarea
             autoFocus
@@ -353,6 +365,9 @@ export const MultimodalInput = memo(
       return false;
     }
     if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType) {
+      return false;
+    }
+    if (prevProps.isNavPanelOpen !== nextProps.isNavPanelOpen) {
       return false;
     }
 

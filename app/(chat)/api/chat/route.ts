@@ -18,11 +18,19 @@ import { getBaronLocation } from "@/lib/ai/tools/get-baron-location";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import { queryWolframAlpha } from "@/lib/ai/tools/wolfram-alpha";
+import { executeCode } from "@/lib/ai/tools/e2b";
+import { getAlphaVantageTools } from "@/lib/ai/mcp/alphavantage";
 import { getAWSTools } from "@/lib/ai/mcp/aws";
+import { getExaTools } from "@/lib/ai/mcp/exa";
 import { getGitHubTools } from "@/lib/ai/mcp/github";
+import { getGoogleMapsTools } from "@/lib/ai/mcp/google-maps";
 import { getNeonTools } from "@/lib/ai/mcp/neon";
 import { getNotionTools } from "@/lib/ai/mcp/notion";
+import { getStripeTools } from "@/lib/ai/mcp/stripe";
 import { getTerraformTools } from "@/lib/ai/mcp/terraform";
+import { getLinearTools } from "@/lib/ai/mcp/linear";
+import { getOpenAIDocsTools } from "@/lib/ai/mcp/openai-docs";
 import { getVercelTools } from "@/lib/ai/mcp/vercel";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
@@ -181,13 +189,19 @@ export async function POST(request: Request) {
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
-        const [neon, github, vercel, notion, terraform, aws] = await Promise.all([
+        const [neon, github, vercel, notion, terraform, aws, exa, alphaVantage, googleMaps, stripe, openaiDocs, linear] = await Promise.all([
           getNeonTools(),
           getGitHubTools(),
           getVercelTools(),
           getNotionTools(),
           getTerraformTools(),
           getAWSTools(),
+          getExaTools(),
+          getAlphaVantageTools(),
+          getGoogleMapsTools(),
+          getStripeTools(),
+          getOpenAIDocsTools(),
+          getLinearTools(),
         ]);
 
         const result = streamText({
@@ -204,12 +218,20 @@ export async function POST(request: Request) {
                 "createDocument",
                 "updateDocument",
                 "requestSuggestions",
+                "queryWolframAlpha",
+                "executeCode",
                 ...(neon.toolNames as string[]),
                 ...(github.toolNames as string[]),
                 ...(vercel.toolNames as string[]),
                 ...(notion.toolNames as string[]),
                 ...(terraform.toolNames as string[]),
                 ...(aws.toolNames as string[]),
+                ...(exa.toolNames as string[]),
+                ...(alphaVantage.toolNames as string[]),
+                ...(googleMaps.toolNames as string[]),
+                ...(stripe.toolNames as string[]),
+                ...(openaiDocs.toolNames as string[]),
+                ...(linear.toolNames as string[]),
               ] as any,
           providerOptions: enableThinking
             ? {
@@ -224,15 +246,23 @@ export async function POST(request: Request) {
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
+            queryWolframAlpha,
+            executeCode,
             ...neon.tools,
             ...github.tools,
             ...vercel.tools,
             ...notion.tools,
             ...terraform.tools,
             ...aws.tools,
+            ...exa.tools,
+            ...alphaVantage.tools,
+            ...googleMaps.tools,
+            ...stripe.tools,
+            ...openaiDocs.tools,
+            ...linear.tools,
           },
           onFinish: async () => {
-            await Promise.all([neon.cleanup(), github.cleanup(), vercel.cleanup(), notion.cleanup(), terraform.cleanup(), aws.cleanup()]);
+            await Promise.all([neon.cleanup(), github.cleanup(), vercel.cleanup(), notion.cleanup(), terraform.cleanup(), aws.cleanup(), exa.cleanup(), alphaVantage.cleanup(), googleMaps.cleanup(), stripe.cleanup(), openaiDocs.cleanup(), linear.cleanup()]);
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,

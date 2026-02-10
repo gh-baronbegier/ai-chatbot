@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAlwaysActiveTextarea } from "@/hooks/use-always-active-textarea";
 import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
@@ -193,6 +194,10 @@ export function Chat({
   const closeNavPanel = useCallback(() => setIsNavPanelOpen(false), []);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useAlwaysActiveTextarea(textareaRef, { disabled: isReadonly });
+  const focusTextarea = useCallback(() => textareaRef.current?.focus(), []);
+
   useAutoResume({
     autoResume,
     initialMessages,
@@ -209,6 +214,7 @@ export function Chat({
           isArtifactVisible={isArtifactVisible}
           isReadonly={isReadonly}
           messages={messages}
+          onBackgroundTap={focusTextarea}
           regenerate={regenerate}
           setMessages={setMessages}
           status={status}
@@ -222,6 +228,7 @@ export function Chat({
               chatId={id}
               input={input}
               messages={messages}
+              isNavPanelOpen={isNavPanelOpen}
               onNavToggle={toggleNavPanel}
               selectedVisibilityType={visibilityType}
               sendMessage={sendMessage}
@@ -230,6 +237,7 @@ export function Chat({
               setMessages={setMessages}
               status={status}
               stop={stop}
+              textareaRef={textareaRef}
             />
           )}
           <NavPanel isOpen={isNavPanelOpen} onClose={closeNavPanel} />

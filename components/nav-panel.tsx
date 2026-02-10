@@ -45,11 +45,13 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
     <div
       ref={panelRef}
       className={`mt-[0.375rem] flex flex-1 flex-col overflow-hidden
-        border border-white/15 bg-background${isOpen ? "" : " hidden"}`}
+        border border-white bg-background${isOpen ? "" : " hidden"}`}
     >
-      <Suspense fallback={<NavPanelSkeleton />}>
-        <NavPanelContent onNavigate={onClose} />
-      </Suspense>
+      {isOpen && (
+        <Suspense fallback={<NavPanelSkeleton />}>
+          <NavPanelContent onNavigate={onClose} />
+        </Suspense>
+      )}
     </div>
   );
 }

@@ -1,10 +1,14 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { ArrowDownIcon } from "lucide-react";
+import { useCallback, useRef } from "react";
 import { useMessages } from "@/hooks/use-messages";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { useDataStream } from "./data-stream-provider";
 import { PreviewMessage, ThinkingMessage } from "./message";
+
+const INTERACTIVE_SELECTOR =
+  'a, button, input, textarea, select, [role="button"], [contenteditable="true"], pre, img, video, [data-interactive]';
 
 type MessagesProps = {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
@@ -16,6 +20,7 @@ type MessagesProps = {
   regenerate: UseChatHelpers<ChatMessage>["regenerate"];
   isReadonly: boolean;
   isArtifactVisible: boolean;
+  onBackgroundTap?: () => void;
 };
 
 function PureMessages({
@@ -27,6 +32,7 @@ function PureMessages({
   setMessages,
   regenerate,
   isReadonly,
+  onBackgroundTap,
 }: MessagesProps) {
   const {
     containerRef: messagesContainerRef,
@@ -40,10 +46,44 @@ function PureMessages({
 
   useDataStream();
 
+  const touchRef = useRef({ startX: 0, startY: 0, moved: false });
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchRef.current = { startX: t.clientX, startY: t.clientY, moved: false };
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    const { startX, startY } = touchRef.current;
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if (dx * dx + dy * dy > 100) {
+      touchRef.current.moved = true;
+    }
+  }, []);
+
+  const handleClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (!onBackgroundTap) return;
+      if (touchRef.current.moved) return;
+      if (
+        (event.target as HTMLElement).closest?.(INTERACTIVE_SELECTOR)
+      )
+        return;
+      if ((window.getSelection()?.toString().length ?? 0) > 0) return;
+      onBackgroundTap();
+    },
+    [onBackgroundTap]
+  );
+
   return (
     <div className="relative flex-1">
       <div
         className="absolute inset-0 touch-pan-y overflow-y-auto overflow-x-hidden"
+        onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         ref={messagesContainerRef}
       >
         <div className="mx-auto flex min-w-0 max-w-4xl flex-col gap-4 px-2 py-4 md:gap-6 md:px-4">

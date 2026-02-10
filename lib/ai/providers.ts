@@ -311,7 +311,7 @@ export function getTitleModel() {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel("title-model");
   }
-  return gateway.languageModel("google/gemini-2.5-flash-lite");
+  return getLanguageModel("claude-max-direct/claude-sonnet-4-5");
 }
 
 export function getArtifactModel() {
