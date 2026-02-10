@@ -242,22 +242,12 @@ export async function POST(request: Request) {
 
         dataStream.merge(result.toUIMessageStream({ sendReasoning: true }));
 
-        result.request.then((req) => {
-          console.log("[chat] raw request body:", JSON.stringify(req.body, null, 2));
-        }).catch(() => {});
-
-        result.response.then((res) => {
+        Promise.resolve(result.response).then((res) => {
           console.log("[chat] response modelId:", res.modelId);
           console.log("[chat] response headers:", JSON.stringify(res.headers, null, 2));
         }).catch(() => {});
 
-        result.steps.then((steps) => {
-          for (const step of steps) {
-            console.log("[chat] raw response body:", JSON.stringify(step.response.body, null, 2));
-          }
-        }).catch(() => {});
-
-        result.usage.then((usage) => {
+        Promise.resolve(result.usage).then((usage) => {
           console.log("[chat] token usage:", JSON.stringify(usage));
         }).catch(() => {});
 
