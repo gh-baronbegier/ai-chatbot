@@ -36,7 +36,7 @@ export type DocumentHandler<T = ArtifactKind> = {
   onUpdateDocument: (args: UpdateDocumentCallbackProps) => Promise<void>;
 };
 
-export function createDocumentHandler<T extends ArtifactKind>(config: {
+export function createDocumentHandler<T extends string>(config: {
   kind: T;
   onCreateDocument: (params: CreateDocumentCallbackProps) => Promise<string>;
   onUpdateDocument: (params: UpdateDocumentCallbackProps) => Promise<string>;
@@ -90,9 +90,9 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
  * Use this array to define the document handlers for each artifact kind.
  */
 export const documentHandlersByArtifactKind: DocumentHandler[] = [
-  textDocumentHandler,
-  codeDocumentHandler,
-  sheetDocumentHandler,
+  // textDocumentHandler,
+  // codeDocumentHandler,
+  // sheetDocumentHandler,
 ];
 
-export const artifactKinds = ["text", "code", "sheet"] as const;
+export const artifactKinds = [] as const;
