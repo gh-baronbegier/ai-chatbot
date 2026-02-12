@@ -8,8 +8,10 @@ import type { ChatMessage } from "@/lib/types";
 
 export function NewChatClient({
   initialMessages = [],
+  initialInput = "",
 }: {
   initialMessages?: ChatMessage[];
+  initialInput?: string;
 }) {
   const [id, setId] = useState<string | null>(null);
 
@@ -28,7 +30,8 @@ export function NewChatClient({
         initialVisibilityType="private"
         isReadonly={false}
         key={id}
-        isFork={initialMessages.length > 0}
+        initialInput={initialInput}
+        isFork={initialMessages.length > 0 || initialInput.length > 0}
       />
       <DataStreamHandler />
     </>

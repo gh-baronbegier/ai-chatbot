@@ -132,18 +132,17 @@ export function getTextFromMessage(message: ChatMessage | UIMessage): string {
     .join('');
 }
 
-export function sliceMessagesUntil(
+export function splitAtForkMessage(
   messages: ChatMessage[],
   untilMessageId?: string,
-): ChatMessage[] {
-  if (!untilMessageId) return messages;
+): { history: ChatMessage[]; forkMessageText: string } {
+  if (!untilMessageId) return { history: messages, forkMessageText: '' };
   const idx = messages.findIndex((m) => m.id === untilMessageId);
-  if (idx === -1) return messages;
-  // Include the target message plus any subsequent assistant/system messages
-  // (i.e. the response to the clicked user message)
-  let end = idx + 1;
-  while (end < messages.length && messages[end].role !== 'user') {
-    end++;
-  }
-  return messages.slice(0, end);
+  if (idx === -1) return { history: messages, forkMessageText: '' };
+  // Messages before the clicked message become history bubbles;
+  // the clicked message text goes into the input textarea
+  return {
+    history: messages.slice(0, idx),
+    forkMessageText: getTextFromMessage(messages[idx]),
+  };
 }

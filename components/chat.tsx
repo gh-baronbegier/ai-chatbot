@@ -45,6 +45,7 @@ export function Chat({
   initialVisibilityType,
   isReadonly,
   autoResume,
+  initialInput = "",
   isFork = false,
 }: {
   id: string;
@@ -52,6 +53,7 @@ export function Chat({
   initialVisibilityType: VisibilityType;
   isReadonly: boolean;
   autoResume: boolean;
+  initialInput?: string;
   isFork?: boolean;
 }) {
   const router = useRouter();
@@ -81,7 +83,7 @@ export function Chat({
     }
   }, [isFork]);
 
-  const [input, setInput] = useState<string>("");
+  const [input, setInput] = useState<string>(initialInput);
   // const [showPlaceholder, setShowPlaceholder] = useState(() => {
   //   if (typeof window === 'undefined') return true;
   //   return !localStorage.getItem('bb-sent');
