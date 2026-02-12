@@ -45,12 +45,14 @@ export function Chat({
   initialVisibilityType,
   isReadonly,
   autoResume,
+  isFork = false,
 }: {
   id: string;
   initialMessages: ChatMessage[];
   initialVisibilityType: VisibilityType;
   isReadonly: boolean;
   autoResume: boolean;
+  isFork?: boolean;
 }) {
   const router = useRouter();
 
@@ -72,6 +74,12 @@ export function Chat({
     return () => window.removeEventListener("popstate", handlePopState);
   }, [router]);
   const { setDataStream } = useDataStream();
+
+  useEffect(() => {
+    if (isFork) {
+      window.history.replaceState({}, "", "/");
+    }
+  }, [isFork]);
 
   const [input, setInput] = useState<string>("");
   // const [showPlaceholder, setShowPlaceholder] = useState(() => {

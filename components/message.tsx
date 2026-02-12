@@ -108,7 +108,21 @@ const PurePreviewMessage = ({
             if (type === "text") {
               if (mode === "view") {
                 return (
-                  <div key={key}>
+                  <div
+                    key={key}
+                    {...(message.role === "user"
+                      ? {
+                          "data-interactive": true,
+                          className: "cursor-pointer",
+                          onClick: () => {
+                            window.open(
+                              `/?fork=${chatId}&until=${message.id}`,
+                              "_blank"
+                            );
+                          },
+                        }
+                      : {})}
+                  >
                     <MessageContent
                       className={cn({
                         "wrap-break-word w-fit text-right text-black dark:text-white":

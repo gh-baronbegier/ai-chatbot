@@ -131,3 +131,19 @@ export function getTextFromMessage(message: ChatMessage | UIMessage): string {
     .map((part) => (part as { type: 'text'; text: string}).text)
     .join('');
 }
+
+export function sliceMessagesUntil(
+  messages: ChatMessage[],
+  untilMessageId?: string,
+): ChatMessage[] {
+  if (!untilMessageId) return messages;
+  const idx = messages.findIndex((m) => m.id === untilMessageId);
+  if (idx === -1) return messages;
+  // Include the target message plus any subsequent assistant/system messages
+  // (i.e. the response to the clicked user message)
+  let end = idx + 1;
+  while (end < messages.length && messages[end].role !== 'user') {
+    end++;
+  }
+  return messages.slice(0, end);
+}

@@ -1,30 +1,28 @@
-"use client";
+import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
+import { convertToUIMessages, sliceMessagesUntil } from "@/lib/utils";
+import type { ChatMessage } from "@/lib/types";
+import { NewChatClient } from "./new-chat-client";
 
-import { useEffect, useState } from "react";
-import { Chat } from "@/components/chat";
-import { DataStreamHandler } from "@/components/data-stream-handler";
-import { generateChatId } from "@/lib/utils";
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ fork?: string; until?: string }>;
+}) {
+  const { fork, until } = await searchParams;
+  let initialMessages: ChatMessage[] = [];
 
-export default function Page() {
-  const [id, setId] = useState<string | null>(null);
+  if (fork) {
+    try {
+      const chat = await getChatById({ id: fork });
+      if (chat) {
+        const dbMessages = await getMessagesByChatId({ id: fork });
+        const uiMessages = convertToUIMessages(dbMessages);
+        initialMessages = sliceMessagesUntil(uiMessages, until);
+      }
+    } catch {
+      /* blank fallback */
+    }
+  }
 
-  useEffect(() => {
-    setId(generateChatId());
-  }, []);
-
-  if (!id) return null;
-
-  return (
-    <>
-      <Chat
-        autoResume={false}
-        id={id}
-        initialMessages={[]}
-        initialVisibilityType="private"
-        isReadonly={false}
-        key={id}
-      />
-      <DataStreamHandler />
-    </>
-  );
+  return <NewChatClient initialMessages={initialMessages} />;
 }
