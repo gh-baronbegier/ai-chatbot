@@ -12,6 +12,15 @@ export const metadata: Metadata = {
   },
   description: "AI Chat",
   manifest: "/site.webmanifest",
+  openGraph: {
+    title: "AI Chat",
+    description: "AI Chat",
+    images: ["/opengraph-image"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/opengraph-image"],
+  },
 };
 
 export const viewport: Viewport = {
@@ -69,10 +78,11 @@ export default function RootLayout({
           alignItems: 'center',
           justifyContent: 'center',
           color: 'var(--foreground)',
+          cursor: 'pointer',
         }}>
           <div style={{ width: '100%', maxWidth: '896px', padding: '0 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <a id="bb-text" href="https://baronbegier.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: '16px', color: 'var(--foreground)', textDecoration: 'none' }}>baronbegier.com</a>
-            <a id="bb-chevron" href="#" style={{ display: 'none', opacity: 0.5, color: 'inherit', lineHeight: 0 }}>
+            <a id="bb-text" href="https://baronbegier.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: '16px', color: 'inherit', textDecoration: 'none' }}>baronbegier.com</a>
+            <a id="bb-chevron" href="#" style={{ display: 'none', opacity: 1, color: 'inherit', lineHeight: 0 }}>
               <svg width="18" height="18" viewBox="0 0 17.3242 10.4004" fill="currentColor">
                 <path d="M8.48633 10.4004C8.73047 10.4004 8.97461 10.3027 9.14062 10.1172L16.6992 2.37305C16.8652 2.20703 16.9629 1.99219 16.9629 1.74805C16.9629 1.24023 16.582 0.849609 16.0742 0.849609C15.8301 0.849609 15.6055 0.947266 15.4395 1.10352L7.95898 8.75L9.00391 8.75L1.52344 1.10352C1.36719 0.947266 1.14258 0.849609 0.888672 0.849609C0.380859 0.849609 0 1.24023 0 1.74805C0 1.99219 0.0976562 2.20703 0.263672 2.38281L7.82227 10.1172C8.00781 10.3027 8.23242 10.4004 8.48633 10.4004Z"/>
               </svg>
@@ -107,8 +117,9 @@ export default function RootLayout({
       text.style.display = '';
       text.removeAttribute('href');
       text.removeAttribute('target');
-      text.style.color = 'var(--foreground)';
+      text.style.color = 'inherit';
       text.style.cursor = 'default';
+      bar.style.cursor = 'default';
       var menuIsOpen = document.documentElement.dataset.navMenuOpen === 'true';
       if (menuIsOpen) { text.textContent = 'menu'; chevron.style.display = 'none'; return; }
       var viewLabels = { chats: 'chats', model: modelLabel.toLowerCase(), tools: 'tools', mcp: 'mcp', appearance: 'appearance', signin: 'sign in' };
@@ -116,8 +127,9 @@ export default function RootLayout({
       chevron.style.display = 'none';
       return;
     }
-    text.style.color = 'var(--foreground)';
+    text.style.color = 'inherit';
     text.style.cursor = '';
+    bar.style.cursor = 'pointer';
     text.textContent = 'baronbegier.com';
     text.href = 'https://baronbegier.com';
     text.target = '_blank';
@@ -137,6 +149,10 @@ export default function RootLayout({
     if (document.documentElement.dataset.chatAtBottom === 'false') {
       e.preventDefault();
       window.dispatchEvent(new CustomEvent('scroll-chat-to-bottom'));
+      return;
+    }
+    if (e.target !== text && text.href) {
+      window.open(text.href, '_blank', 'noopener,noreferrer');
     }
   });
   window.addEventListener('toggle-nav-panel', function() { setTimeout(update, 0); });

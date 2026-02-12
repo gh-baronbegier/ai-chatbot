@@ -14,7 +14,18 @@ export async function generateMetadata({
   const { id } = await params;
   try {
     const chat = await getChatById({ id });
-    return { title: chat?.title ?? "AI Chat" };
+    const title = chat?.title ?? "AI Chat";
+    return {
+      title,
+      openGraph: {
+        title,
+        images: [`/${id}/opengraph-image`],
+      },
+      twitter: {
+        card: "summary_large_image",
+        images: [`/${id}/opengraph-image`],
+      },
+    };
   } catch {
     return { title: "AI Chat" };
   }

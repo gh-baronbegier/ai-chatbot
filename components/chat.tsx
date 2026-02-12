@@ -47,6 +47,7 @@ export function Chat({
   autoResume,
   initialInput = "",
   isFork = false,
+  autoSendInitialInput = false,
 }: {
   id: string;
   initialMessages: ChatMessage[];
@@ -55,6 +56,7 @@ export function Chat({
   autoResume: boolean;
   initialInput?: string;
   isFork?: boolean;
+  autoSendInitialInput?: boolean;
 }) {
   const router = useRouter();
 
@@ -79,7 +81,7 @@ export function Chat({
 
   useEffect(() => {
     if (isFork) {
-      window.history.replaceState({}, "", "/");
+      window.history.replaceState({}, "", `/${id}`);
     }
   }, [isFork]);
 
@@ -217,7 +219,7 @@ export function Chat({
   }, [isNavPanelOpen]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  useAlwaysActiveTextarea(textareaRef, { disabled: isReadonly });
+  useAlwaysActiveTextarea(textareaRef, { disabled: false });
   const focusTextarea = useCallback(() => textareaRef.current?.focus(), []);
 
   const submitForm = useCallback(() => {
@@ -248,6 +250,22 @@ export function Chat({
     setMessages,
   });
 
+  const hasAutoSentRef = useRef(false);
+  const sendMessageRef = useRef(sendMessage);
+  sendMessageRef.current = sendMessage;
+
+  useEffect(() => {
+    if (autoSendInitialInput && initialInput && !hasAutoSentRef.current) {
+      hasAutoSentRef.current = true;
+      sendMessageRef.current({
+        role: "user",
+        parts: [{ type: "text", text: initialInput }],
+      });
+      setInput("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <>
       <div className="overscroll-behavior-contain flex h-dvh w-full min-w-0 touch-pan-y flex-col bg-background">
@@ -263,11 +281,16 @@ export function Chat({
           status={status}
           votes={votes}
           inputSlot={
-            !isReadonly && (
               <PromptInput
                 className="rounded-none border-none bg-transparent px-0 py-0 shadow-none flex flex-col justify-center"
                 onSubmit={(event) => {
                   event.preventDefault();
+                  if (isReadonly) {
+                    if (!input.trim()) return;
+                    window.open(`/?fork=${id}&msg=${encodeURIComponent(input.trim())}`, "_blank");
+                    setInput("");
+                    return;
+                  }
                   if (status !== "ready") return;
                   submitForm();
                 }}
@@ -291,7 +314,6 @@ export function Chat({
                   />
                 </div>
               </PromptInput>
-            )
           }
         />
 

@@ -361,6 +361,8 @@
 }
 
 /* Bottom bar link */
-#bb-text:hover {
+#bottom-bar:hover,
+#bottom-bar:hover #bb-text,
+#bottom-bar:hover #bb-chevron {
   color: rgb(0, 110, 219) !important;
 }

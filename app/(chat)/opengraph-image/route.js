@@ -61,7 +61,7 @@ export async function GET() {
             fontFamily: "SF Pro",
           }}
         >
-          <div style={{ color: "white", fontSize: 72, fontWeight: 700 }}>
+          <div style={{ color: "white", fontSize: 176, fontWeight: 700 }}>
             Agent
           </div>
         </div>

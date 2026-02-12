@@ -16,7 +16,7 @@ const sfProRegular = base64ToArrayBuffer(sfProRegularBase64);
 
 const GRID_URL = "https://imagedelivery.net/TgyYfXLmYx-JJG3tKWEdbw/og-home-grid/og";
 
-function truncate(str, maxLength = 28) {
+function truncate(str, maxLength = 50) {
   if (!str || str.length <= maxLength) return str;
   return str.slice(0, maxLength);
 }
@@ -71,18 +71,26 @@ export async function GET(_request, { params }) {
         >
         <div
           style={{
-            background: "#000",
-            border: "1px solid rgba(255, 255, 255, 0.2)",
-            padding: "0 6px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            justifyContent: "center",
             fontFamily: "SF Pro",
+            maxWidth: 1100,
+            textAlign: "center",
+            lineHeight: 1.2,
           }}
         >
-          <div style={{ color: "white", fontSize: 72, fontWeight: 700 }}>
+          <span style={{
+            color: "white",
+            fontSize: 96,
+            fontWeight: 700,
+            background: "#000",
+            padding: 0,
+            boxDecorationBreak: "clone",
+          }}>
             {title}
-          </div>
+          </span>
         </div>
         </div>
       </div>

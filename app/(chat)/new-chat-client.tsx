@@ -9,9 +9,11 @@ import type { ChatMessage } from "@/lib/types";
 export function NewChatClient({
   initialMessages = [],
   initialInput = "",
+  autoSendInitialInput = false,
 }: {
   initialMessages?: ChatMessage[];
   initialInput?: string;
+  autoSendInitialInput?: boolean;
 }) {
   const [id, setId] = useState<string | null>(null);
 
@@ -32,6 +34,7 @@ export function NewChatClient({
         key={id}
         initialInput={initialInput}
         isFork={initialMessages.length > 0 || initialInput.length > 0}
+        autoSendInitialInput={autoSendInitialInput}
       />
       <DataStreamHandler />
     </>
