@@ -1,4 +1,4 @@
-import type { TextStreamPart, GenerateTextResult } from "ai";
+import type { TextStreamPart, GenerateTextResult, ToolSet } from "ai";
 import { getFallbackModel } from "./providers";
 
 // ---------------------------------------------------------------------------
@@ -292,7 +292,7 @@ function generateCompletionId(): string {
 
 export function createOpenAIStreamTransformer(opts: {
   model: string;
-}): TransformStream<TextStreamPart<Record<string, unknown>>, Uint8Array> {
+}): TransformStream<TextStreamPart<ToolSet>, Uint8Array> {
   const completionId = generateCompletionId();
   const created = Math.floor(Date.now() / 1000);
   let sentRole = false;
@@ -428,11 +428,6 @@ export function createOpenAIStreamTransformer(opts: {
           break;
         }
 
-        case "step-finish": {
-          // Intermediate step finish — ignore, wait for the final finish
-          break;
-        }
-
         case "finish": {
           // AI SDK v6 fullStream: { type: "finish", finishReason, totalUsage: { inputTokens, outputTokens } }
           const p = part as unknown as {
@@ -518,7 +513,7 @@ function mapFinishReason(reason: string): string {
 // ---------------------------------------------------------------------------
 
 export function convertAISDKResponseToOpenAI(
-  result: GenerateTextResult<Record<string, unknown>, never>,
+  result: GenerateTextResult<ToolSet, never>,
   model: string,
 ): OpenAIChatResponse {
   const completionId = generateCompletionId();

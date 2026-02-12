@@ -5,7 +5,7 @@
   "scripts": {
     "patch-mui": "node lib/scripts/patch-mui-license.js",
     "dev": "node lib/scripts/patch-mui-license.js && next dev --turbo",
-    "build": "export NODE_OPTIONS='--max-old-space-size=8192' && tsx lib/db/migrate && next build",
+    "build": "node lib/scripts/patch-mui-license.js && export NODE_OPTIONS='--max-old-space-size=8192' && tsx lib/db/migrate && next build",
     "start": "next start",
     "lint": "ultracite check",
     "format": "ultracite fix",
@@ -76,7 +76,6 @@
     "nanoid": "^5.1.6",
     "next": "16.1.6",
     "next-auth": "5.0.0-beta.25",
-    "next-themes": "^0.4.6",
     "orderedmap": "^2.1.1",
     "papaparse": "^5.5.3",
     "postgres": "^3.4.8",

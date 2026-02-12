@@ -136,7 +136,7 @@ Output ONLY the title text. No prefixes, no formatting.
 Examples:
 - "what's the weather in nyc" → Weather in NYC
 - "help me write an essay about space" → Space Essay Help
-- "hi" → New Conversation
+- "hi" → Greeting
 - "debug my python code" → Python Debugging
 
 Bad outputs (never do this):

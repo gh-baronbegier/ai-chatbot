@@ -271,7 +271,7 @@ const DocumentContent = ({ document }: { document: Document }) => {
       ) : document.kind === "code" ? (
         <div className="relative flex w-full flex-1">
           <div className="absolute inset-0">
-            <CodeEditor {...commonProps} onSaveContent={handleSaveContent} />
+            <CodeEditor {...commonProps} onSaveContent={handleSaveContent} isInline />
           </div>
         </div>
       ) : document.kind === "sheet" ? (

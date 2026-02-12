@@ -4,14 +4,28 @@
 /* include utility classes in streamdown */
 @source "../node_modules/streamdown/dist/index.js";
 
-/* custom variant for setting dark mode programmatically */
-@custom-variant dark (&:is(.dark, .dark *));
+/*
+ * Hybrid dark variant:
+ * 1. Explicit: [data-theme="dark"] on <html>
+ * 2. System:   prefers-color-scheme: dark when NO data-theme is set
+ */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) {
+      @slot;
+    }
+  }
+}
 
 /* include plugins */
 @plugin "@tailwindcss/typography";
 
-/* define design tokens (light mode) */
+/* design tokens — light (default) */
 :root {
+  color-scheme: light dark;
   --background: hsl(0 0% 100%); /* pure white */
   --foreground: hsl(240 10% 3.9%);
   --card: hsl(0 0% 100%);
@@ -49,8 +63,14 @@
   --sidebar: hsl(0 0% 98%);
 }
 
-/* define design tokens (dark mode) */
-.dark {
+/* explicit light override */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* explicit dark override */
+:root[data-theme="dark"] {
+  color-scheme: dark;
   --background: hsl(0 0% 0%);
   --foreground: hsl(0 0% 98%);
   --card: hsl(240 10% 3.9%);
@@ -84,6 +104,46 @@
   --sidebar-border: hsl(240 3.7% 15.9%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
   --sidebar: hsl(240 5.9% 10%);
+}
+
+/* system dark — only when no explicit data-theme is set */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --background: hsl(0 0% 0%);
+    --foreground: hsl(0 0% 98%);
+    --card: hsl(240 10% 3.9%);
+    --card-foreground: hsl(0 0% 98%);
+    --popover: hsl(240 10% 3.9%);
+    --popover-foreground: hsl(0 0% 98%);
+    --primary: hsl(0 0% 98%);
+    --primary-foreground: hsl(240 5.9% 10%);
+    --secondary: hsl(240 3.7% 15.9%);
+    --secondary-foreground: hsl(0 0% 98%);
+    --muted: hsl(240 3.7% 15.9%);
+    --muted-foreground: hsl(240 5% 64.9%);
+    --accent: hsl(240 3.7% 15.9%);
+    --accent-foreground: hsl(0 0% 98%);
+    --destructive: hsl(0 62.8% 30.6%);
+    --destructive-foreground: hsl(0 0% 98%);
+    --border: hsl(240 3.7% 15.9%);
+    --input: hsl(240 3.7% 15.9%);
+    --ring: hsl(240 4.9% 83.9%);
+    --chart-1: hsl(220 70% 50%);
+    --chart-2: hsl(160 60% 45%);
+    --chart-3: hsl(30 80% 55%);
+    --chart-4: hsl(280 65% 60%);
+    --chart-5: hsl(340 75% 55%);
+    --sidebar-background: hsl(240 5.9% 10%);
+    --sidebar-foreground: hsl(240 4.8% 95.9%);
+    --sidebar-primary: hsl(224.3 76.3% 48%);
+    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(240 3.7% 15.9%);
+    --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+    --sidebar-border: hsl(240 3.7% 15.9%);
+    --sidebar-ring: hsl(217.2 91.2% 59.8%);
+    --sidebar: hsl(240 5.9% 10%);
+  }
 }
 
 /* define theme */
@@ -173,22 +233,6 @@
 
 @utility overscroll-behavior-contain {
   overscroll-behavior: contain;
-}
-
-@layer utilities {
-  :root {
-    --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 214, 219, 220;
-    --background-end-rgb: 255, 255, 255;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --foreground-rgb: 255, 255, 255;
-      --background-start-rgb: 0, 0, 0;
-      --background-end-rgb: 0, 0, 0;
-    }
-  }
 }
 
 @layer base {
@@ -314,4 +358,9 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Bottom bar link */
+#bb-text:hover {
+  color: rgb(0, 110, 219) !important;
 }

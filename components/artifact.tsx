@@ -25,12 +25,12 @@ import { useSidebar } from "./ui/sidebar";
 import { VersionFooter } from "./version-footer";
 
 export const artifactDefinitions = [
-  textArtifact,
-  codeArtifact,
+  // textArtifact,
+  // codeArtifact,
   imageArtifact,
-  sheetArtifact,
+  // sheetArtifact,
 ];
-export type ArtifactKind = (typeof artifactDefinitions)[number]["kind"];
+export type ArtifactKind = "text" | "code" | "sheet" | "image";
 
 export type UIArtifact = {
   title: string;
@@ -232,12 +232,8 @@ function PureArtifact({
     (definition) => definition.kind === artifact.kind
   );
 
-  if (!artifactDefinition) {
-    throw new Error("Artifact definition not found!");
-  }
-
   useEffect(() => {
-    if (artifact.documentId !== "init" && artifactDefinition.initialize) {
+    if (artifact.documentId !== "init" && artifactDefinition?.initialize) {
       artifactDefinition.initialize({
         documentId: artifact.documentId,
         setMetadata,
@@ -245,7 +241,7 @@ function PureArtifact({
     }
   }, [artifact.documentId, artifactDefinition, setMetadata]);
 
-  if (!artifact.isVisible) {
+  if (!artifactDefinition || !artifact.isVisible) {
     return null;
   }
 

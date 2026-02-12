@@ -21,7 +21,6 @@ import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import { useModel } from "./model-provider";
-import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import type { Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
@@ -75,10 +74,15 @@ export function Chat({
   const { setDataStream } = useDataStream();
 
   const [input, setInput] = useState<string>("");
+  // const [showPlaceholder, setShowPlaceholder] = useState(() => {
+  //   if (typeof window === 'undefined') return true;
+  //   return !localStorage.getItem('bb-sent');
+  // });
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
-  const { thinkingBudget, maxTokens } = useModel();
+  const { thinkingBudget, maxTokens, selectedModel } = useModel();
   const thinkingBudgetRef = useRef(thinkingBudget);
   const maxTokensRef = useRef(maxTokens);
+  const selectedModelRef = useRef(selectedModel);
 
   useEffect(() => {
     thinkingBudgetRef.current = thinkingBudget;
@@ -87,6 +91,10 @@ export function Chat({
   useEffect(() => {
     maxTokensRef.current = maxTokens;
   }, [maxTokens]);
+
+  useEffect(() => {
+    selectedModelRef.current = selectedModel;
+  }, [selectedModel]);
 
   const {
     messages,
@@ -135,7 +143,7 @@ export function Chat({
             ...(isToolApprovalContinuation
               ? { messages: request.messages }
               : { message: lastMessage }),
-            selectedChatModel: DEFAULT_CHAT_MODEL,
+            selectedChatModel: selectedModelRef.current,
             selectedVisibilityType: visibilityType,
             thinkingBudget: thinkingBudgetRef.current,
             maxTokens: maxTokensRef.current,
@@ -193,6 +201,11 @@ export function Chat({
   const closeNavPanel = useCallback(() => setIsNavPanelOpen(false), []);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
 
+  // Sync data-nav-panel-open attribute so the top bar script can update its icons
+  useEffect(() => {
+    document.documentElement.dataset.navPanelOpen = isNavPanelOpen ? "true" : "false";
+  }, [isNavPanelOpen]);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useAlwaysActiveTextarea(textareaRef, { disabled: isReadonly });
   const focusTextarea = useCallback(() => textareaRef.current?.focus(), []);
@@ -205,6 +218,10 @@ export function Chat({
       parts: [{ type: "text", text: input }],
     });
     setInput("");
+    // if (showPlaceholder) {
+    //   localStorage.setItem('bb-sent', '1');
+    //   setShowPlaceholder(false);
+    // }
   }, [input, setInput, sendMessage, id]);
 
   // Listen for toggle-nav-panel custom event from the top bar script
@@ -251,13 +268,13 @@ export function Chat({
                   </button>
                   <PromptInputTextarea
                     autoFocus
-                    className="min-h-0! h-auto! grow resize-none border-0! border-none! bg-transparent pl-2 pr-4 py-3 text-base leading-[1.625rem] tracking-[-0.025rem] text-right outline-none ring-0 text-black dark:text-white caret-black dark:caret-white [-ms-overflow-style:none] [scrollbar-width:none] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-scrollbar]:hidden"
+                    className="min-h-0! h-auto! grow resize-none border-0! border-none! bg-transparent pl-2 pr-4 py-3 text-base leading-[1.625rem] tracking-[-0.025rem] text-right outline-none ring-0 text-black dark:text-white [-ms-overflow-style:none] [scrollbar-width:none] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-scrollbar]:hidden"
                     data-testid="multimodal-input"
                     disableAutoResize={true}
                     maxHeight={200}
                     minHeight={0}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder=""
+                    placeholder="Ask Anything"
                     ref={textareaRef}
                     rows={1}
                     value={input}
@@ -268,11 +285,15 @@ export function Chat({
           }
         />
 
-        {isNavPanelOpen && (
-          <div className="fixed inset-x-0 top-[36px] bottom-0 z-10 mx-auto flex flex-col px-[0.375rem]">
-            <NavPanel isOpen={isNavPanelOpen} onClose={closeNavPanel} />
-          </div>
-        )}
+        <div
+          className="fixed inset-x-0 top-[36px] bottom-[36px] z-10 mx-auto flex flex-col px-[0.375rem]"
+          style={{
+            visibility: isNavPanelOpen ? "visible" : "hidden",
+            pointerEvents: isNavPanelOpen ? "auto" : "none",
+          }}
+        >
+          <NavPanel isOpen={isNavPanelOpen} onClose={closeNavPanel} />
+        </div>
       </div>
 
       <Artifact

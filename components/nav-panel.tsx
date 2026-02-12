@@ -29,6 +29,7 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
       const target = e.target as HTMLElement;
       if (target.closest("[data-nav-toggle]")) return;
       if (target.closest("[data-radix-popper-content-wrapper]")) return;
+      if (target.closest("#bottom-bar")) return;
       if (panelRef.current && !panelRef.current.contains(target)) onClose();
     };
     const timer = setTimeout(
@@ -44,14 +45,11 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
   return (
     <div
       ref={panelRef}
-      className={`mt-[0.375rem] flex flex-1 flex-col overflow-hidden
-        border border-white/[0.01] bg-background${isOpen ? "" : " hidden"}`}
+      className="my-[0.375rem] flex flex-1 flex-col overflow-hidden border border-foreground bg-background"
     >
-      {isOpen && (
-        <Suspense fallback={<NavPanelSkeleton />}>
-          <NavPanelContent onNavigate={onClose} />
-        </Suspense>
-      )}
+      <Suspense fallback={<NavPanelSkeleton />}>
+        <NavPanelContent onNavigate={onClose} />
+      </Suspense>
     </div>
   );
 }

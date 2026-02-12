@@ -12,10 +12,12 @@ export async function generateMetadata({
   params,
 }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const chat = await getChatById({ id });
-  return {
-    title: chat?.title ?? "AI Chat",
-  };
+  try {
+    const chat = await getChatById({ id });
+    return { title: chat?.title ?? "AI Chat" };
+  } catch {
+    return { title: "AI Chat" };
+  }
 }
 
 export default function Page(props: { params: Promise<{ id: string }> }) {

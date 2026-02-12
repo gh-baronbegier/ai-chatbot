@@ -283,6 +283,10 @@ export function Weather({
 }: {
   weatherAtLocation?: WeatherAtLocation;
 }) {
+  if (!weatherAtLocation?.hourly || !weatherAtLocation?.current || !weatherAtLocation?.daily) {
+    return <div className="p-4 text-sm text-muted-foreground">Weather data unavailable</div>;
+  }
+
   const currentHigh = Math.max(
     ...weatherAtLocation.hourly.temperature_2m.slice(0, 24)
   );

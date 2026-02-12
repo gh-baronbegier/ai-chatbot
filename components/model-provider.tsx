@@ -7,12 +7,15 @@ import {
   useState,
 } from "react";
 
+import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 
 type ModelContextValue = {
   thinkingBudget: number;
   setThinkingBudget: (v: number) => void;
   maxTokens: number;
   setMaxTokens: (v: number) => void;
+  selectedModel: string;
+  setSelectedModel: (v: string) => void;
 };
 
 const ModelContext = createContext<ModelContextValue | undefined>(undefined);
@@ -20,6 +23,7 @@ const ModelContext = createContext<ModelContextValue | undefined>(undefined);
 export function ModelProvider({ children }: { children: ReactNode }) {
   const [thinkingBudget, _setThinkingBudget] = useState(128_000);
   const [maxTokens, _setMaxTokens] = useState(128_000);
+  const [selectedModel, _setSelectedModel] = useState(DEFAULT_CHAT_MODEL);
 
   const setThinkingBudget = (v: number) => {
     _setThinkingBudget(v);
@@ -29,6 +33,10 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     _setMaxTokens(v);
   };
 
+  const setSelectedModel = (v: string) => {
+    _setSelectedModel(v);
+  };
+
   return (
     <ModelContext.Provider
       value={{
@@ -36,6 +44,8 @@ export function ModelProvider({ children }: { children: ReactNode }) {
         setThinkingBudget,
         maxTokens,
         setMaxTokens,
+        selectedModel,
+        setSelectedModel,
       }}
     >
       {children}

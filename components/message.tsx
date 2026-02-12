@@ -319,6 +319,33 @@ const PurePreviewMessage = ({
               );
             }
 
+            if (type === "dynamic-tool") {
+              const { toolCallId, toolName, state } = part as any;
+              if (state === "output-available") return null;
+              return (
+                <Tool defaultOpen={true} key={toolCallId}>
+                  <ToolHeader state={state} type={`tool-${toolName}` as any} />
+                  <ToolContent>
+                    <ToolInput input={(part as any).input} />
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
+            if (type.startsWith("tool-")) {
+              const toolPart = part as any;
+              const { toolCallId, state } = toolPart;
+              if (state === "output-available") return null;
+              return (
+                <Tool defaultOpen={true} key={toolCallId}>
+                  <ToolHeader state={state} type={type as `tool-${string}`} />
+                  <ToolContent>
+                    <ToolInput input={toolPart.input} />
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
             return null;
           })}
 

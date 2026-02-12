@@ -8,7 +8,9 @@ export function EnsureSession() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      signIn("guest", { redirect: false }).then(() => update());
+      signIn("guest", { redirect: false })
+        .then(() => update())
+        .catch((err) => console.error("Guest sign-in failed:", err));
     }
   }, [status, update]);
 

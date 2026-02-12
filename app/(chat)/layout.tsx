@@ -45,14 +45,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           var bar = document.getElementById('sidebar-top-bar');
           var menuIcon = document.getElementById('topbar-menu');
           var closeIcon = document.getElementById('topbar-close');
-          var isOpen = false;
+          function syncIcons() {
+            var open = document.documentElement.dataset.navPanelOpen === 'true';
+            menuIcon.style.display = open ? 'none' : '';
+            closeIcon.style.display = open ? '' : 'none';
+          }
           bar.addEventListener('click', function() {
             window.dispatchEvent(new CustomEvent('toggle-nav-panel'));
-            isOpen = !isOpen;
-            document.documentElement.dataset.navPanelOpen = isOpen ? 'true' : 'false';
-            menuIcon.style.display = isOpen ? 'none' : '';
-            closeIcon.style.display = isOpen ? '' : 'none';
           });
+          var observer = new MutationObserver(syncIcons);
+          observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-nav-panel-open'] });
         })();
       `}} />
     </DataStreamProvider>

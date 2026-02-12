@@ -15,9 +15,10 @@ type EditorProps = {
   isCurrentVersion: boolean;
   currentVersionIndex: number;
   suggestions: Suggestion[];
+  isInline?: boolean;
 };
 
-function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
+function PureCodeEditor({ content, onSaveContent, status, isInline }: EditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorView | null>(null);
 
@@ -92,7 +93,7 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
 
   return (
     <div
-      className="not-prose relative w-full pb-[calc(80dvh)] text-sm"
+      className={`not-prose relative w-full text-sm${isInline ? "" : " pb-[calc(80dvh)]"}`}
       ref={containerRef}
     />
   );

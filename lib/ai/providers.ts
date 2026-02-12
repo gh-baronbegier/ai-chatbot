@@ -3,6 +3,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { customProvider } from "ai";
 import { isTestEnvironment } from "../constants";
 import { getMaxAccessToken } from "./max-oauth";
+import { getOpenAICodexAuthContext } from "./openai-codex-oauth";
 
 const groq = createOpenAI({
   apiKey: process.env.GROQ_API_KEY,
@@ -11,6 +12,87 @@ const groq = createOpenAI({
 
 const CLAUDE_MAX_BETA_FLAGS =
   "oauth-2025-04-20,claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14";
+const OPENAI_CODEX_RESPONSES_PATH = "/responses";
+const OPENAI_CODEX_REWRITTEN_RESPONSES_PATH = "/codex/responses";
+const OPENAI_CODEX_DEFAULT_INSTRUCTIONS =
+  "You are Codex, OpenAI's coding assistant.";
+
+function getCodexSystemPrompt(modelSlug: string): string {
+  return `<codex_behavior>
+<model_information>
+Model slug: ${modelSlug}
+Runtime: OpenAI Codex via ChatGPT backend API
+Role: terminal-first coding agent
+</model_information>
+<identity>
+You are a coding agent running in the Codex CLI, a terminal-based coding assistant.
+Codex CLI is an open source project led by OpenAI.
+Be precise, safe, and helpful.
+</identity>
+<capabilities>
+- Receive user prompts and workspace context.
+- Communicate with concise progress and final responses.
+- Execute terminal commands and apply patches.
+- Maintain plans when tasks are multi-step.
+</capabilities>
+<working_style>
+- Be concise, direct, and friendly.
+- Prefer practical, actionable output over long explanations.
+- State assumptions clearly and preserve user intent.
+- Avoid unnecessary verbosity and unrelated changes.
+</working_style>
+<execution_rules>
+- Prioritize safe operations.
+- Respect repository conventions and AGENTS.md instructions when present.
+- Keep fixes focused on root cause.
+- Preserve behavior unless change is intentional.
+</execution_rules>
+</codex_behavior>`;
+}
+
+function mergeCodexInstructions(
+  modelSlug: string,
+  userInstructions: string
+): string {
+  const codexPrompt = getCodexSystemPrompt(modelSlug);
+  const trimmedUserInstructions = userInstructions.trim();
+
+  if (trimmedUserInstructions.includes("<codex_behavior>")) {
+    return trimmedUserInstructions;
+  }
+
+  return `${codexPrompt}\n\n${trimmedUserInstructions}`;
+}
+
+function sanitizeCodexInput(
+  body: Record<string, unknown>
+): Record<string, unknown> {
+  const inputItems = Array.isArray(body.input) ? body.input : null;
+
+  if (inputItems) {
+    body.input = inputItems
+      .filter((item) => {
+        if (!item || typeof item !== "object") return true;
+        const candidate = item as Record<string, unknown>;
+        return candidate.type !== "item_reference";
+      })
+      .map((item) => {
+        if (!item || typeof item !== "object") return item;
+        const candidate = { ...(item as Record<string, unknown>) };
+
+        if (typeof candidate.id === "string" && candidate.id.startsWith("rs_")) {
+          delete candidate.id;
+        }
+
+        return candidate;
+      });
+  }
+
+  delete body.previous_response_id;
+  delete body.conversation;
+
+  return body;
+}
 
 const CLAUDE_CODE_SYSTEM_MSG = {
   type: "text" as const,
@@ -177,6 +259,107 @@ const claudeMaxDirect = createAnthropic({
   },
 });
 
+function rewriteUrlForCodex(input: RequestInfo | URL): RequestInfo | URL {
+  if (typeof input === "string") {
+    return input.replace(
+      OPENAI_CODEX_RESPONSES_PATH,
+      OPENAI_CODEX_REWRITTEN_RESPONSES_PATH
+    );
+  }
+
+  if (input instanceof URL) {
+    return new URL(
+      input.toString().replace(
+        OPENAI_CODEX_RESPONSES_PATH,
+        OPENAI_CODEX_REWRITTEN_RESPONSES_PATH
+      )
+    );
+  }
+
+  return input;
+}
+
+const openAICodexDirect = createOpenAI({
+  baseURL: "https://chatgpt.com/backend-api",
+  apiKey: "placeholder",
+  fetch: async (input, init) => {
+    const { accessToken, accountId } = await getOpenAICodexAuthContext();
+    const headers = new Headers(init?.headers);
+    headers.delete("x-api-key");
+    headers.set("Authorization", `Bearer ${accessToken}`);
+    headers.set("chatgpt-account-id", accountId);
+    headers.set("OpenAI-Beta", "responses=experimental");
+    headers.set("originator", "codex_cli_rs");
+
+    let updatedInit = init;
+    if (init?.body && typeof init.body === "string") {
+      try {
+        const body = JSON.parse(init.body) as Record<string, unknown>;
+        const modelSlug =
+          typeof body.model === "string" && body.model.length > 0
+            ? body.model
+            : "unknown-codex-model";
+        const instructions = body.instructions;
+
+        if (typeof instructions !== "string" || instructions.trim().length === 0) {
+          let inferredInstructions = "";
+          const inputItems = Array.isArray(body.input) ? body.input : [];
+
+          for (const item of inputItems) {
+            if (!item || typeof item !== "object") continue;
+            const candidate = item as Record<string, unknown>;
+            if (candidate.role !== "system" && candidate.role !== "developer") continue;
+
+            const content = candidate.content;
+            if (typeof content === "string" && content.trim().length > 0) {
+              inferredInstructions = content.trim();
+              break;
+            }
+
+            if (Array.isArray(content)) {
+              const textParts = content
+                .map((part) => {
+                  if (!part || typeof part !== "object") return "";
+                  const piece = part as Record<string, unknown>;
+                  const text = piece.text;
+                  return typeof text === "string" ? text : "";
+                })
+                .filter((text) => text.trim().length > 0);
+
+              if (textParts.length > 0) {
+                inferredInstructions = textParts.join("\n").trim();
+                break;
+              }
+            }
+          }
+
+          body.instructions =
+            inferredInstructions || OPENAI_CODEX_DEFAULT_INSTRUCTIONS;
+        }
+
+        if (typeof body.instructions === "string" && body.instructions.trim().length > 0) {
+          body.instructions = mergeCodexInstructions(modelSlug, body.instructions);
+        }
+
+        // Codex backend expects non-persistent streaming requests.
+        body.store = false;
+        body.stream = true;
+        delete body.max_output_tokens;
+        delete body.max_completion_tokens;
+
+        updatedInit = {
+          ...init,
+          body: JSON.stringify(sanitizeCodexInput(body)),
+        };
+      } catch {
+        // Keep original body if parsing fails.
+      }
+    }
+
+    return globalThis.fetch(rewriteUrlForCodex(input), { ...updatedInit, headers });
+  },
+});
+
 export const myProvider = isTestEnvironment
   ? (() => {
       const {
@@ -201,7 +384,14 @@ export function getLanguageModel(modelId: string) {
     return myProvider.languageModel(modelId);
   }
 
-  // All models route through claude-max-direct
+  if (modelId.startsWith("openai-codex-direct/")) {
+    const codexModelId = modelId
+      .replace(/^openai-codex-direct\//, "")
+      .replace(/-think-(low|medium|high)$/, "");
+    return openAICodexDirect.languageModel(codexModelId);
+  }
+
+  // Default route remains claude-max-direct
   // Strip -think-low/medium/high suffix (thinking budget handled in chat route)
   const maxModelId = modelId
     .replace(/^claude-max-direct\//, "")

@@ -141,12 +141,17 @@ export async function POST(request: Request) {
     const isReasoningModel =
       selectedChatModel.includes("reasoning") ||
       selectedChatModel.includes("thinking");
+    const isClaudeMaxModel =
+      selectedChatModel.startsWith("claude-max/") ||
+      selectedChatModel.startsWith("claude-max-direct/");
+    const isOpenAICodexModel =
+      selectedChatModel.startsWith("openai-codex-direct/");
 
-    // Thinking budget: client slider > model ID suffix > null
+    // Thinking budget: client slider > model ID suffix > max for claude-max models > null
     const thinkMatch = selectedChatModel.match(/-think-(low|medium|high)$/);
     let thinkingBudget = clientBudget ?? (thinkMatch
       ? { low: 10_000, medium: 32_000, high: 128_000 }[thinkMatch[1]]
-      : null);
+      : isClaudeMaxModel ? 128_000 : null);
     const enableThinking = isReasoningModel || thinkingBudget !== null;
 
     // Max tokens: client slider > derived from thinking budget > defaults
@@ -196,8 +201,8 @@ export async function POST(request: Request) {
             : [
                 "getWeather",
                 "getBaronLocation",
-                "createDocument",
-                "updateDocument",
+                // "createDocument",
+                // "updateDocument",
                 "requestSuggestions",
                 "queryWolframAlpha",
                 "executeCode",
@@ -216,8 +221,8 @@ export async function POST(request: Request) {
           tools: {
             getWeather,
             getBaronLocation,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
+            // createDocument: createDocument({ session, dataStream }),
+            // updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
             queryWolframAlpha,
             executeCode,
@@ -242,17 +247,42 @@ export async function POST(request: Request) {
           },
         } as const;
 
+        const openaiReasoningEffort =
+          selectedChatModel.includes("gpt-5.3-codex") ? "xhigh" : "high";
+
+        const providerOptions: Parameters<typeof streamText>[0]["providerOptions"] =
+          isClaudeMaxModel && enableThinking
+            ? {
+                anthropic: {
+                  thinking: { type: "enabled", budgetTokens: thinkingBudget ?? 10_000 },
+                },
+              }
+            : isOpenAICodexModel
+              ? {
+                  openai: {
+                    store: false,
+                    reasoningEffort: openaiReasoningEffort,
+                  },
+                }
+              : undefined;
+
+        const writeModelSelection = (resolvedModel: string, fallback: boolean) => {
+          dataStream.write({
+            type: "data-chat-model",
+            data: {
+              requested: selectedChatModel,
+              resolved: resolvedModel,
+              fallback,
+            },
+            transient: true,
+          });
+        };
+
         try {
           const result = streamText({
             model: getLanguageModel(selectedChatModel),
             maxOutputTokens: maxTokens,
-            providerOptions: enableThinking
-              ? {
-                  anthropic: {
-                    thinking: { type: "enabled", budgetTokens: thinkingBudget ?? 10_000 },
-                  },
-                }
-              : undefined,
+            providerOptions,
             ...sharedStreamOpts,
           });
 
@@ -262,6 +292,7 @@ export async function POST(request: Request) {
           const res = await result.response;
           console.log("[chat] response modelId:", res.modelId);
           console.log("[chat] response headers:", JSON.stringify(res.headers, null, 2));
+          writeModelSelection(res.modelId, false);
 
           Promise.resolve(result.usage).then((usage) => {
             console.log("[chat] token usage:", JSON.stringify(usage));
@@ -279,6 +310,7 @@ export async function POST(request: Request) {
 
           const fallbackRes = await fallbackResult.response;
           console.log("[chat] fallback response modelId:", fallbackRes.modelId);
+          writeModelSelection(fallbackRes.modelId, true);
 
           Promise.resolve(fallbackResult.usage).then((usage) => {
             console.log("[chat] fallback token usage:", JSON.stringify(usage));
