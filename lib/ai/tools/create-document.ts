@@ -9,7 +9,7 @@ import type { ChatMessage } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
 
 type CreateDocumentProps = {
-  session: Session;
+  session: Session | null;
   dataStream: UIMessageStreamWriter<ChatMessage>;
 };
 

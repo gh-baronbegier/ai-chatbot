@@ -1,6 +1,5 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
-import { ArrowDownIcon } from "lucide-react";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useMessages } from "@/hooks/use-messages";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
@@ -21,6 +20,7 @@ type MessagesProps = {
   isReadonly: boolean;
   isArtifactVisible: boolean;
   onBackgroundTap?: () => void;
+  inputSlot?: React.ReactNode;
 };
 
 function PureMessages({
@@ -33,6 +33,7 @@ function PureMessages({
   regenerate,
   isReadonly,
   onBackgroundTap,
+  inputSlot,
 }: MessagesProps) {
   const {
     containerRef: messagesContainerRef,
@@ -63,6 +64,16 @@ function PureMessages({
     }
   }, []);
 
+  useEffect(() => {
+    document.documentElement.dataset.chatAtBottom = String(isAtBottom);
+  }, [isAtBottom]);
+
+  useEffect(() => {
+    const handler = () => scrollToBottom("smooth");
+    window.addEventListener("scroll-chat-to-bottom", handler);
+    return () => window.removeEventListener("scroll-chat-to-bottom", handler);
+  }, [scrollToBottom]);
+
   const handleClick = useCallback(
     (event: React.MouseEvent) => {
       if (!onBackgroundTap) return;
@@ -86,10 +97,7 @@ function PureMessages({
         onTouchMove={handleTouchMove}
         ref={messagesContainerRef}
       >
-        <div className="mx-auto flex min-w-0 max-w-4xl flex-col gap-4 px-2 py-4 md:gap-6 md:px-4">
-          {messages.length > 0 && (
-            <div className="shrink-0" />
-          )}
+        <div className="mx-auto flex min-h-full min-w-0 max-w-4xl flex-col gap-4 px-2 pt-[52px] pb-4 md:gap-6 md:px-4">
           {messages.map((message, index) => (
             <PreviewMessage
               addToolApprovalResponse={addToolApprovalResponse}
@@ -113,8 +121,8 @@ function PureMessages({
             />
           ))}
 
-          {null}
-
+          {status === "ready" && inputSlot}
+          <div className="flex-1" />
           <div
             className="min-h-[24px] min-w-[24px] shrink-0"
             ref={messagesEndRef}
@@ -122,18 +130,6 @@ function PureMessages({
         </div>
       </div>
 
-      <button
-        aria-label="Scroll to bottom"
-        className={`absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border bg-background p-2 shadow-lg hover:bg-muted ${
-          isAtBottom
-            ? "pointer-events-none scale-0 opacity-0"
-            : "pointer-events-auto scale-100 opacity-100"
-        }`}
-        onClick={() => scrollToBottom("smooth")}
-        type="button"
-      >
-        <ArrowDownIcon className="size-4 invisible" />
-      </button>
     </div>
   );
 }

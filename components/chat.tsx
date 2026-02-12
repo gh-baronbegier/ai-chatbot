@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
-import { ChatHeader } from "@/components/chat-header";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,12 +24,17 @@ import { useModel } from "./model-provider";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import type { Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
-import type { Attachment, ChatMessage } from "@/lib/types";
+import type { ChatMessage } from "@/lib/types";
 import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 import { Artifact } from "./artifact";
 import { useDataStream } from "./data-stream-provider";
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from "./elements/prompt-input";
+import { ArrowUpIcon, VoiceWaveIcon } from "./icons";
 import { Messages } from "./messages";
-import { MultimodalInput } from "./multimodal-input";
 import { NavPanel } from "./nav-panel";
 import { getChatHistoryPaginationKey } from "./sidebar-history";
 import { toast } from "./toast";
@@ -175,7 +179,7 @@ export function Chat({
       });
 
       setHasAppendedQuery(true);
-      window.history.replaceState({}, "", `/chat/${id}`);
+      window.history.replaceState({}, "", `/${id}`);
     }
   }, [query, sendMessage, hasAppendedQuery, id]);
 
@@ -184,7 +188,6 @@ export function Chat({
     fetcher
   );
 
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isNavPanelOpen, setIsNavPanelOpen] = useState(false);
   const toggleNavPanel = useCallback(() => setIsNavPanelOpen((prev) => !prev), []);
   const closeNavPanel = useCallback(() => setIsNavPanelOpen(false), []);
@@ -193,6 +196,23 @@ export function Chat({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useAlwaysActiveTextarea(textareaRef, { disabled: isReadonly });
   const focusTextarea = useCallback(() => textareaRef.current?.focus(), []);
+
+  const submitForm = useCallback(() => {
+    if (!input.trim()) return;
+    window.history.pushState({}, "", `/${id}`);
+    sendMessage({
+      role: "user",
+      parts: [{ type: "text", text: input }],
+    });
+    setInput("");
+  }, [input, setInput, sendMessage, id]);
+
+  // Listen for toggle-nav-panel custom event from the top bar script
+  useEffect(() => {
+    const handler = () => toggleNavPanel();
+    window.addEventListener("toggle-nav-panel", handler);
+    return () => window.removeEventListener("toggle-nav-panel", handler);
+  }, [toggleNavPanel]);
 
   useAutoResume({
     autoResume,
@@ -215,43 +235,53 @@ export function Chat({
           setMessages={setMessages}
           status={status}
           votes={votes}
+          inputSlot={
+            !isReadonly && (
+              <PromptInput
+                className="rounded-none border-none bg-transparent px-0 py-0 shadow-none flex flex-col justify-center"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (status !== "ready") return;
+                  submitForm();
+                }}
+              >
+                <div className="flex items-center">
+                  <button type="button" className="flex shrink-0 items-center justify-center text-black dark:text-white opacity-0 pointer-events-none">
+                    <VoiceWaveIcon size={20} />
+                  </button>
+                  <PromptInputTextarea
+                    autoFocus
+                    className="min-h-0! h-auto! grow resize-none border-0! border-none! bg-transparent pl-2 pr-4 py-3 text-base leading-[1.625rem] tracking-[-0.025rem] text-right outline-none ring-0 text-black dark:text-white caret-black dark:caret-white [-ms-overflow-style:none] [scrollbar-width:none] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-scrollbar]:hidden"
+                    data-testid="multimodal-input"
+                    disableAutoResize={true}
+                    maxHeight={200}
+                    minHeight={0}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder=""
+                    ref={textareaRef}
+                    rows={1}
+                    value={input}
+                  />
+                </div>
+              </PromptInput>
+            )
+          }
         />
 
-        <div className={`fixed top-0 inset-x-0 z-1 mx-auto flex flex-col max-w-4xl border-t-0 px-[0.375rem] pb-0${isNavPanelOpen ? " bottom-0" : ""}`}>
-          {!isReadonly && (
-            <MultimodalInput
-              attachments={attachments}
-              chatId={id}
-              input={input}
-              messages={messages}
-              isNavPanelOpen={isNavPanelOpen}
-              onNavToggle={toggleNavPanel}
-              selectedVisibilityType={visibilityType}
-              sendMessage={sendMessage}
-              setAttachments={setAttachments}
-              setInput={setInput}
-              setMessages={setMessages}
-              status={status}
-              stop={stop}
-              textareaRef={textareaRef}
-            />
-          )}
-          <NavPanel isOpen={isNavPanelOpen} onClose={closeNavPanel} />
-        </div>
+        {isNavPanelOpen && (
+          <div className="fixed inset-x-0 top-[36px] bottom-0 z-10 mx-auto flex flex-col px-[0.375rem]">
+            <NavPanel isOpen={isNavPanelOpen} onClose={closeNavPanel} />
+          </div>
+        )}
       </div>
 
       <Artifact
         addToolApprovalResponse={addToolApprovalResponse}
-        attachments={attachments}
         chatId={id}
-        input={input}
         isReadonly={isReadonly}
         messages={messages}
         regenerate={regenerate}
-        selectedVisibilityType={visibilityType}
         sendMessage={sendMessage}
-        setAttachments={setAttachments}
-        setInput={setInput}
         setMessages={setMessages}
         status={status}
         stop={stop}

@@ -50,9 +50,7 @@ export default function NavPanelContent({
   // const [view, setView] = useState<NavView>("chat");
   // const [modelSearch, setModelSearch] = useState("");
 
-  const activeChatId = pathname?.startsWith("/chat/")
-    ? pathname.split("/")[2]
-    : null;
+  const activeChatId = pathname && pathname !== "/" ? pathname.split("/")[1] : null;
 
   // --- Chat history (fetch all at once) ---
   const {
@@ -109,7 +107,7 @@ export default function NavPanelContent({
                 width: 24,
                 height: 24,
                 borderRadius: 6,
-                color: "white",
+                color: "inherit",
               }}
               onClick={(e) => {
                 e.stopPropagation();
@@ -129,7 +127,7 @@ export default function NavPanelContent({
 
   const handleDelete = () => {
     const chatToDelete = deleteId;
-    const isCurrentChat = pathname === `/chat/${chatToDelete}`;
+    const isCurrentChat = pathname === `/${chatToDelete}`;
 
     setShowDeleteDialog(false);
 
@@ -192,7 +190,7 @@ export default function NavPanelContent({
         <div className="shrink-0 px-2">
           <div className="flex items-center justify-between">
             <button
-              className="flex size-8 items-center justify-center rounded-md text-white hover:bg-white/10"
+              className="flex size-8 items-center justify-center rounded-md text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10"
               onClick={() => {
                 router.push("/");
                 router.refresh();
@@ -204,7 +202,7 @@ export default function NavPanelContent({
               <PlusIcon size={14} className="invisible" />
             </button>
             <button
-              className="flex size-8 items-center justify-center rounded-md text-white hover:bg-white/10"
+              className="flex size-8 items-center justify-center rounded-md text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10"
               onClick={() => setShowDeleteAllDialog(true)}
               title="Delete All Chats"
               type="button"
@@ -217,7 +215,7 @@ export default function NavPanelContent({
         {/* Scrollable chat history */}
         <div className="flex-1 overflow-hidden p-2">
               {isLoading ? null : hasEmptyChatHistory ? (
-                <div className="px-2 py-4 text-center text-sm text-white">
+                <div className="px-2 py-4 text-center text-sm text-black dark:text-white">
                   No chats yet
                 </div>
               ) : (
@@ -233,7 +231,7 @@ export default function NavPanelContent({
                     disableRowSelectionOnClick
                     disableRowGrouping
                     onRowClick={(params) => {
-                      router.push(`/chat/${params.row.id}`);
+                      router.push(`/${params.row.id}`);
                       onNavigate();
                     }}
                     getRowClassName={(params) =>
@@ -259,7 +257,8 @@ export default function NavPanelContent({
                         cursor: "pointer",
                         borderRadius: "6px",
                         "&:hover": { background: "transparent !important" },
-                        "&.active-chat-row": { background: "rgba(255,255,255,0.1) !important" },
+                        "&.active-chat-row": { background: "rgba(0,0,0,0.1) !important" },
+                        ".dark &.active-chat-row": { background: "rgba(255,255,255,0.1) !important" },
                       },
                       "& .MuiDataGrid-cell": {
                         minHeight: "32px !important",

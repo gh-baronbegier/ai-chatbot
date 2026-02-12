@@ -12,7 +12,7 @@ import { createResumableStreamContext } from "resumable-stream";
 import { auth, type UserType } from "@/app/(auth)/auth";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { getFallbackModel, getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { getBaronLocation } from "@/lib/ai/tools/get-baron-location";
 import { getWeather } from "@/lib/ai/tools/get-weather";
@@ -30,7 +30,6 @@ import { getNotionTools } from "@/lib/ai/mcp/notion";
 import { getStripeTools } from "@/lib/ai/mcp/stripe";
 import { getTerraformTools } from "@/lib/ai/mcp/terraform";
 import { getLinearTools } from "@/lib/ai/mcp/linear";
-import { getOpenAIDocsTools } from "@/lib/ai/mcp/openai-docs";
 import { getVercelTools } from "@/lib/ai/mcp/vercel";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
@@ -69,7 +68,8 @@ export async function POST(request: Request) {
   try {
     const json = await request.json();
     requestBody = postRequestBodySchema.parse(json);
-  } catch (_) {
+  } catch (parseError) {
+    console.error("[chat] Request validation failed:", parseError);
     return new ChatSDKError("bad_request:api").toResponse();
   }
 
@@ -87,21 +87,8 @@ export async function POST(request: Request) {
     console.log("[chat] selectedChatModel:", selectedChatModel, "| thinkingBudget:", clientBudget, "| maxTokens:", clientMaxTokens);
 
     const session = await auth();
-
-    if (!session?.user) {
-      return new ChatSDKError("unauthorized:chat").toResponse();
-    }
-
-    const userType: UserType = session.user.type;
-
-    // const messageCount = await getMessageCountByUserId({
-    //   id: session.user.id,
-    //   differenceInHours: 24,
-    // });
-
-    // if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
-    //   return new ChatSDKError("rate_limit:chat").toResponse();
-    // }
+    const userId = session?.user?.id ?? "guest";
+    const userType: UserType = session?.user?.type ?? "guest";
 
     const isToolApprovalFlow = Boolean(messages);
 
@@ -110,16 +97,13 @@ export async function POST(request: Request) {
     let titlePromise: Promise<string> | null = null;
 
     if (chat) {
-      if (chat.userId !== session.user.id) {
-        return new ChatSDKError("forbidden:chat").toResponse();
-      }
       if (!isToolApprovalFlow) {
         messagesFromDb = await getMessagesByChatId({ id });
       }
     } else if (message?.role === "user") {
       await saveChat({
         id,
-        userId: session.user.id,
+        userId: userId,
         title: "New chat",
         visibility: selectedVisibilityType,
       });
@@ -189,7 +173,7 @@ export async function POST(request: Request) {
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
-        const [neon, github, vercel, notion, terraform, aws, exa, alphaVantage, googleMaps, stripe, openaiDocs, linear] = await Promise.all([
+        const [neon, github, vercel, notion, terraform, aws, exa, alphaVantage, googleMaps, stripe, linear] = await Promise.all([
           getNeonTools(),
           getGitHubTools(),
           getVercelTools(),
@@ -200,15 +184,12 @@ export async function POST(request: Request) {
           getAlphaVantageTools(),
           getGoogleMapsTools(),
           getStripeTools(),
-          getOpenAIDocsTools(),
           getLinearTools(),
         ]);
 
-        const result = streamText({
-          model: getLanguageModel(selectedChatModel),
+        const sharedStreamOpts = {
           system: systemPrompt({ selectedChatModel, requestHints }),
           messages: modelMessages,
-          maxOutputTokens: maxTokens,
           stopWhen: stepCountIs(1000),
           experimental_activeTools: isReasoningModel
             ? []
@@ -230,16 +211,8 @@ export async function POST(request: Request) {
                 ...(alphaVantage.toolNames as string[]),
                 ...(googleMaps.toolNames as string[]),
                 ...(stripe.toolNames as string[]),
-                ...(openaiDocs.toolNames as string[]),
                 ...(linear.toolNames as string[]),
               ] as any,
-          providerOptions: enableThinking
-            ? {
-                anthropic: {
-                  thinking: { type: "enabled", budgetTokens: thinkingBudget ?? 10_000 },
-                },
-              }
-            : undefined,
           tools: {
             getWeather,
             getBaronLocation,
@@ -258,28 +231,59 @@ export async function POST(request: Request) {
             ...alphaVantage.tools,
             ...googleMaps.tools,
             ...stripe.tools,
-            ...openaiDocs.tools,
             ...linear.tools,
           },
           onFinish: async () => {
-            await Promise.all([neon.cleanup(), github.cleanup(), vercel.cleanup(), notion.cleanup(), terraform.cleanup(), aws.cleanup(), exa.cleanup(), alphaVantage.cleanup(), googleMaps.cleanup(), stripe.cleanup(), openaiDocs.cleanup(), linear.cleanup()]);
+            await Promise.all([neon.cleanup(), github.cleanup(), vercel.cleanup(), notion.cleanup(), terraform.cleanup(), aws.cleanup(), exa.cleanup(), alphaVantage.cleanup(), googleMaps.cleanup(), stripe.cleanup(), linear.cleanup()]);
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
             functionId: "stream-text",
           },
-        });
+        } as const;
 
-        dataStream.merge(result.toUIMessageStream({ sendReasoning: true }));
+        try {
+          const result = streamText({
+            model: getLanguageModel(selectedChatModel),
+            maxOutputTokens: maxTokens,
+            providerOptions: enableThinking
+              ? {
+                  anthropic: {
+                    thinking: { type: "enabled", budgetTokens: thinkingBudget ?? 10_000 },
+                  },
+                }
+              : undefined,
+            ...sharedStreamOpts,
+          });
 
-        Promise.resolve(result.response).then((res) => {
+          dataStream.merge(result.toUIMessageStream({ sendReasoning: true }));
+
+          // Force await to catch stream-level errors early
+          const res = await result.response;
           console.log("[chat] response modelId:", res.modelId);
           console.log("[chat] response headers:", JSON.stringify(res.headers, null, 2));
-        }).catch(() => {});
 
-        Promise.resolve(result.usage).then((usage) => {
-          console.log("[chat] token usage:", JSON.stringify(usage));
-        }).catch(() => {});
+          Promise.resolve(result.usage).then((usage) => {
+            console.log("[chat] token usage:", JSON.stringify(usage));
+          }).catch(() => {});
+        } catch (primaryError) {
+          console.warn("[chat] Primary model failed, falling back to Groq:", primaryError);
+
+          const fallbackResult = streamText({
+            model: getFallbackModel(),
+            maxOutputTokens: Math.min(maxTokens, 65_536),
+            ...sharedStreamOpts,
+          });
+
+          dataStream.merge(fallbackResult.toUIMessageStream({ sendReasoning: true }));
+
+          const fallbackRes = await fallbackResult.response;
+          console.log("[chat] fallback response modelId:", fallbackRes.modelId);
+
+          Promise.resolve(fallbackResult.usage).then((usage) => {
+            console.log("[chat] fallback token usage:", JSON.stringify(usage));
+          }).catch(() => {});
+        }
 
         if (titlePromise) {
           const title = await titlePromise;
@@ -356,15 +360,6 @@ export async function POST(request: Request) {
       return error.toResponse();
     }
 
-    if (
-      error instanceof Error &&
-      error.message?.includes(
-        "AI Gateway requires a valid credit card on file to service requests"
-      )
-    ) {
-      return new ChatSDKError("bad_request:activate_gateway").toResponse();
-    }
-
     console.error("Unhandled error in chat API:", error, { vercelId });
     return new ChatSDKError("offline:chat").toResponse();
   }
@@ -378,17 +373,7 @@ export async function DELETE(request: Request) {
     return new ChatSDKError("bad_request:api").toResponse();
   }
 
-  const session = await auth();
-
-  if (!session?.user) {
-    return new ChatSDKError("unauthorized:chat").toResponse();
-  }
-
   const chat = await getChatById({ id });
-
-  if (chat?.userId !== session.user.id) {
-    return new ChatSDKError("forbidden:chat").toResponse();
-  }
 
   const deletedChat = await deleteChatById({ id });
 

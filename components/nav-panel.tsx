@@ -1,6 +1,6 @@
 "use client";
 
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { Suspense, lazy, useEffect, useRef } from "react";
 
 const NavPanelContent = lazy(() => import("./nav-panel-content"));
 
@@ -45,7 +45,7 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
     <div
       ref={panelRef}
       className={`mt-[0.375rem] flex flex-1 flex-col overflow-hidden
-        border border-white bg-background${isOpen ? "" : " hidden"}`}
+        border border-white/[0.01] bg-background${isOpen ? "" : " hidden"}`}
     >
       {isOpen && (
         <Suspense fallback={<NavPanelSkeleton />}>
@@ -59,7 +59,7 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
 function NavPanelSkeleton() {
   return (
     <div className="p-2">
-      <div className="px-2 py-1 text-xs text-white/50">Today</div>
+      <div className="px-2 py-1 text-xs text-black/50 dark:text-white/50">Today</div>
       <div className="flex flex-col">
         {[44, 32, 28, 64, 52].map((item) => (
           <div
@@ -67,7 +67,7 @@ function NavPanelSkeleton() {
             key={item}
           >
             <div
-              className="h-4 max-w-(--skeleton-width) flex-1 rounded-md bg-white/10"
+              className="h-4 max-w-(--skeleton-width) flex-1 rounded-md bg-black/10 dark:bg-white/10"
               style={
                 {
                   "--skeleton-width": `${item}%`,

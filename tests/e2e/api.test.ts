@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const CHAT_URL_REGEX = /\/chat\/[\w-]+/;
+const CHAT_URL_REGEX = /^\/[\w-]+$/;
 const ERROR_TEXT_REGEX = /error|failed|trouble/i;
 
 test.describe("Chat API Integration", () => {
@@ -20,14 +20,14 @@ test.describe("Chat API Integration", () => {
     expect(content?.length).toBeGreaterThan(0);
   });
 
-  test("redirects to /chat/:id after sending message", async ({ page }) => {
+  test("redirects to /:id after sending message", async ({ page }) => {
     await page.goto("/");
 
     const input = page.getByTestId("multimodal-input");
     await input.fill("Test redirect");
     await page.getByTestId("send-button").click();
 
-    // URL should change to /chat/:id format
+    // URL should change to /:id format
     await expect(page).toHaveURL(CHAT_URL_REGEX, { timeout: 10_000 });
   });
 

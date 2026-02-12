@@ -1,20 +1,18 @@
-import { connection } from "next/server";
-import { Suspense } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import { Chat } from "@/components/chat";
 import { DataStreamHandler } from "@/components/data-stream-handler";
-import { generateUUID } from "@/lib/utils";
+import { generateChatId } from "@/lib/utils";
 
 export default function Page() {
-  return (
-    <Suspense fallback={<div className="flex h-dvh" />}>
-      <NewChatPage />
-    </Suspense>
-  );
-}
+  const [id, setId] = useState<string | null>(null);
 
-async function NewChatPage() {
-  await connection();
-  const id = generateUUID();
+  useEffect(() => {
+    setId(generateChatId());
+  }, []);
+
+  if (!id) return null;
 
   return (
     <>

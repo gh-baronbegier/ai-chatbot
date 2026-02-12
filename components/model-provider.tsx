@@ -17,32 +17,16 @@ type ModelContextValue = {
 
 const ModelContext = createContext<ModelContextValue | undefined>(undefined);
 
-function setCookie(name: string, value: string) {
-  const maxAge = 60 * 60 * 24 * 365; // 1 year
-  // biome-ignore lint/suspicious/noDocumentCookie: needed for client-side cookie setting
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}`;
-}
-
-export function ModelProvider({
-  initialThinkingBudget,
-  initialMaxTokens,
-  children,
-}: {
-  initialThinkingBudget: number;
-  initialMaxTokens: number;
-  children: ReactNode;
-}) {
-  const [thinkingBudget, _setThinkingBudget] = useState(initialThinkingBudget);
-  const [maxTokens, _setMaxTokens] = useState(initialMaxTokens);
+export function ModelProvider({ children }: { children: ReactNode }) {
+  const [thinkingBudget, _setThinkingBudget] = useState(128_000);
+  const [maxTokens, _setMaxTokens] = useState(128_000);
 
   const setThinkingBudget = (v: number) => {
     _setThinkingBudget(v);
-    setCookie("chat-thinking-budget", String(v));
   };
 
   const setMaxTokens = (v: number) => {
     _setMaxTokens(v);
-    setCookie("chat-max-tokens", String(v));
   };
 
   return (

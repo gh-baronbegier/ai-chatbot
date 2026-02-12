@@ -2,6 +2,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
+  index,
   json,
   pgTable,
   primaryKey,
@@ -19,17 +20,23 @@ export const user = pgTable("User", {
 
 export type User = InferSelectModel<typeof user>;
 
-export const chat = pgTable("Chat", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp("createdAt").notNull(),
-  title: text("title").notNull(),
-  userId: uuid("userId")
-    .notNull()
-    .references(() => user.id),
-  visibility: varchar("visibility", { enum: ["public", "private"] })
-    .notNull()
-    .default("private"),
-});
+export const chat = pgTable(
+  "Chat",
+  {
+    id: text("id").primaryKey().notNull(),
+    createdAt: timestamp("createdAt").notNull(),
+    title: text("title").notNull(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id),
+    visibility: varchar("visibility", { enum: ["public", "private"] })
+      .notNull()
+      .default("private"),
+  },
+  (table) => ({
+    idx_chat_userId: index("idx_chat_userId").on(table.userId),
+  })
+);
 
 export type Chat = InferSelectModel<typeof chat>;
 
@@ -37,7 +44,7 @@ export type Chat = InferSelectModel<typeof chat>;
 // Read the migration guide at https://chat-sdk.dev/docs/migration-guides/message-parts
 export const messageDeprecated = pgTable("Message", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  chatId: uuid("chatId")
+  chatId: text("chatId")
     .notNull()
     .references(() => chat.id),
   role: varchar("role").notNull(),
@@ -47,16 +54,25 @@ export const messageDeprecated = pgTable("Message", {
 
 export type MessageDeprecated = InferSelectModel<typeof messageDeprecated>;
 
-export const message = pgTable("Message_v2", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  chatId: uuid("chatId")
-    .notNull()
-    .references(() => chat.id),
-  role: varchar("role").notNull(),
-  parts: json("parts").notNull(),
-  attachments: json("attachments").notNull(),
-  createdAt: timestamp("createdAt").notNull(),
-});
+export const message = pgTable(
+  "Message_v2",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    chatId: text("chatId")
+      .notNull()
+      .references(() => chat.id),
+    role: varchar("role").notNull(),
+    parts: json("parts").notNull(),
+    attachments: json("attachments").notNull(),
+    createdAt: timestamp("createdAt").notNull(),
+  },
+  (table) => ({
+    idx_message_v2_chatId_createdAt: index("idx_message_v2_chatId_createdAt").on(
+      table.chatId,
+      table.createdAt
+    ),
+  })
+);
 
 export type DBMessage = InferSelectModel<typeof message>;
 
@@ -65,7 +81,7 @@ export type DBMessage = InferSelectModel<typeof message>;
 export const voteDeprecated = pgTable(
   "Vote",
   {
-    chatId: uuid("chatId")
+    chatId: text("chatId")
       .notNull()
       .references(() => chat.id),
     messageId: uuid("messageId")
@@ -85,7 +101,7 @@ export type VoteDeprecated = InferSelectModel<typeof voteDeprecated>;
 export const vote = pgTable(
   "Vote_v2",
   {
-    chatId: uuid("chatId")
+    chatId: text("chatId")
       .notNull()
       .references(() => chat.id),
     messageId: uuid("messageId")
@@ -116,11 +132,10 @@ export const document = pgTable(
       .notNull()
       .references(() => user.id),
   },
-  (table) => {
-    return {
-      pk: primaryKey({ columns: [table.id, table.createdAt] }),
-    };
-  }
+  (table) => ({
+    pk: primaryKey({ columns: [table.id, table.createdAt] }),
+    idx_document_userId: index("idx_document_userId").on(table.userId),
+  })
 );
 
 export type Document = InferSelectModel<typeof document>;
@@ -155,7 +170,7 @@ export const stream = pgTable(
   "Stream",
   {
     id: uuid("id").notNull().defaultRandom(),
-    chatId: uuid("chatId").notNull(),
+    chatId: text("chatId").notNull(),
     createdAt: timestamp("createdAt").notNull(),
   },
   (table) => ({
@@ -164,6 +179,7 @@ export const stream = pgTable(
       columns: [table.chatId],
       foreignColumns: [chat.id],
     }),
+    idx_stream_chatId: index("idx_stream_chatId").on(table.chatId),
   })
 );
 

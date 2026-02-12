@@ -64,6 +64,20 @@
       "when": 1768479010084,
       "tag": "0008_flat_forgotten_one",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1770878000648,
+      "tag": "0009_spooky_silverclaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1770879224352,
+      "tag": "0010_short_daredevil",
+      "breakpoints": true
     }
   ]
 }

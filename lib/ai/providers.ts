@@ -1,7 +1,13 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAI } from "@ai-sdk/openai";
 import { customProvider } from "ai";
 import { isTestEnvironment } from "../constants";
 import { getMaxAccessToken } from "./max-oauth";
+
+const groq = createOpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
 
 const CLAUDE_MAX_BETA_FLAGS =
   "oauth-2025-04-20,claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14";
@@ -215,4 +221,8 @@ export function getArtifactModel() {
     return myProvider.languageModel("artifact-model");
   }
   return getLanguageModel("claude-max-direct/claude-haiku-4-5");
+}
+
+export function getFallbackModel() {
+  return groq.languageModel("openai/gpt-oss-120b");
 }

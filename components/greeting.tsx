@@ -5,7 +5,7 @@ export const Greeting = () => {
       key="overview"
     >
       <div className="font-semibold text-xl md:text-2xl">Hello there!</div>
-      <div className="text-xl text-zinc-500 md:text-2xl">
+      <div className="text-xl text-muted-foreground md:text-2xl">
         How can I help you today?
       </div>
     </div>

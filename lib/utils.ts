@@ -56,7 +56,28 @@ export function getLocalStorage(key: string) {
 }
 
 export function generateUUID(): string {
-  return crypto.randomUUID();
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments where randomUUID is not available
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+export function generateChatId(): string {
+  const now = new Date();
+  const y = now.getFullYear() % 10;
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(3)))
+    .map((b) => chars[b % chars.length])
+    .join('');
+  return `${y}${m}${d}${rand}`;
 }
 
 type ResponseMessageWithoutId = ToolModelMessage | AssistantModelMessage;

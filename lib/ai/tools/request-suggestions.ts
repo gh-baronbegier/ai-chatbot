@@ -8,7 +8,7 @@ import { generateUUID } from "@/lib/utils";
 import { getArtifactModel } from "../providers";
 
 type RequestSuggestionsProps = {
-  session: Session;
+  session: Session | null;
   dataStream: UIMessageStreamWriter<ChatMessage>;
 };
 
@@ -92,7 +92,7 @@ export const requestSuggestions = ({
         }
       }
 
-      if (session.user?.id) {
+      if (session?.user?.id) {
         const userId = session.user.id;
 
         await saveSuggestions({

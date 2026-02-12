@@ -6,7 +6,7 @@ import { getDocumentById } from "@/lib/db/queries";
 import type { ChatMessage } from "@/lib/types";
 
 type UpdateDocumentProps = {
-  session: Session;
+  session: Session | null;
   dataStream: UIMessageStreamWriter<ChatMessage>;
 };
 

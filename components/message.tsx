@@ -111,7 +111,7 @@ const PurePreviewMessage = ({
                   <div key={key}>
                     <MessageContent
                       className={cn({
-                        "wrap-break-word w-fit text-right text-white":
+                        "wrap-break-word w-fit text-right text-black dark:text-white":
                           message.role === "user",
                         "bg-transparent px-0 py-0 text-left":
                           message.role === "assistant",
@@ -172,7 +172,7 @@ const PurePreviewMessage = ({
                         type="tool-getWeather"
                       />
                       <ToolContent>
-                        <div className="px-4 py-3 text-muted-foreground text-sm">
+                        <div className="px-4 py-3 text-muted-foreground text-base leading-[1.625rem] tracking-[-0.025rem]">
                           Weather lookup was denied.
                         </div>
                       </ToolContent>
@@ -349,7 +349,7 @@ export const ThinkingMessage = () => {
     >
       <div className="flex items-start justify-start">
         <div className="flex w-full flex-col gap-2 md:gap-4">
-          <div className="flex items-center gap-1 p-0 text-muted-foreground text-sm">
+          <div className="flex items-center gap-1 p-0 text-muted-foreground text-base leading-[1.625rem] tracking-[-0.025rem]">
             <span className="inline-flex">
               <span className="animate-bounce [animation-delay:0ms]">.</span>
               <span className="animate-bounce [animation-delay:150ms]">.</span>

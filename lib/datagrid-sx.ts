@@ -47,11 +47,12 @@ export const dataGridTransparentVarsSx: SxProps<Theme> = {
   "--DataGrid-t-cell-background-pinned": "transparent",
 };
 
-/** white text on headers, cells, columnHeaderTitle */
+/** theme-aware text: black in light mode, white in dark mode */
 export const dataGridWhiteTextSx: SxProps<Theme> = {
-  color: "white",
-  "& .MuiDataGrid-columnHeaders": { color: "white" },
-  "& .MuiDataGrid-columnHeader": { color: "white" },
-  "& .MuiDataGrid-columnHeaderTitle": { color: "white" },
-  "& .MuiDataGrid-cell": { color: "white", border: "none" },
+  color: "black",
+  ".dark &": { color: "white" },
+  "& .MuiDataGrid-columnHeaders": { color: "inherit" },
+  "& .MuiDataGrid-columnHeader": { color: "inherit" },
+  "& .MuiDataGrid-columnHeaderTitle": { color: "inherit" },
+  "& .MuiDataGrid-cell": { color: "inherit", border: "none" },
 };

@@ -21,7 +21,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/",
-    "/chat/:id",
+    "/:id",
     "/api/:path*",
     "/login",
     "/register",
