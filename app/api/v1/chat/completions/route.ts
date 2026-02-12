@@ -215,7 +215,7 @@ export async function POST(request: Request) {
         const outputStream = result.fullStream.pipeThrough(transformer);
 
         // Clean up MCP after stream completes
-        result.response.then(() => cleanupMCP()).catch(() => cleanupMCP());
+        Promise.resolve(result.response).then(() => cleanupMCP(), () => cleanupMCP());
 
         return new Response(outputStream, {
           status: 200,
@@ -237,7 +237,7 @@ export async function POST(request: Request) {
 
         const transformer = createOpenAIStreamTransformer({ model: "groq-fallback" });
         const outputStream = fallbackResult.fullStream.pipeThrough(transformer);
-        fallbackResult.response.then(() => cleanupMCP()).catch(() => cleanupMCP());
+        Promise.resolve(fallbackResult.response).then(() => cleanupMCP(), () => cleanupMCP());
 
         return new Response(outputStream, {
           status: 200,
