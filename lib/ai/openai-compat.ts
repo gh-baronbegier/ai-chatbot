@@ -394,8 +394,10 @@ export function createOpenAIStreamTransformer(opts: {
           const p = part as unknown as {
             toolCallId: string;
             toolName: string;
+            input: unknown;
             args: unknown;
           };
+          const toolArgs = p.input ?? p.args;
           if (!toolCallIndices.has(p.toolCallId)) {
             const idx = nextToolIndex++;
             toolCallIndices.set(p.toolCallId, idx);
@@ -409,7 +411,7 @@ export function createOpenAIStreamTransformer(opts: {
                       type: "function",
                       function: {
                         name: p.toolName,
-                        arguments: typeof p.args === "string" ? p.args : JSON.stringify(p.args),
+                        arguments: typeof toolArgs === "string" ? toolArgs : JSON.stringify(toolArgs ?? {}),
                       },
                     },
                   ],
@@ -530,14 +532,18 @@ export function convertAISDKResponseToOpenAI(
   };
 
   if (hasToolCalls) {
-    message.tool_calls = result.toolCalls.map((tc) => ({
-      id: tc.toolCallId,
-      type: "function" as const,
-      function: {
-        name: tc.toolName,
-        arguments: typeof tc.args === "string" ? tc.args : JSON.stringify(tc.args),
-      },
-    }));
+    message.tool_calls = result.toolCalls.map((tc) => {
+      // AI SDK v6 uses .input, older versions used .args
+      const args = (tc as any).input ?? (tc as any).args;
+      return {
+        id: tc.toolCallId,
+        type: "function" as const,
+        function: {
+          name: tc.toolName,
+          arguments: typeof args === "string" ? args : JSON.stringify(args ?? {}),
+        },
+      };
+    });
   }
 
   const finishReason = hasToolCalls

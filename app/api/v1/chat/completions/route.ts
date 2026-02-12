@@ -3,7 +3,6 @@ import {
   jsonSchema,
   stepCountIs,
   streamText,
-  tool as defineTool,
 } from "ai";
 
 import { systemPrompt, type RequestHints } from "@/lib/ai/prompts";
@@ -142,13 +141,13 @@ export async function POST(request: Request) {
       if (t.type === "function" && t.function?.name) {
         // Only add if we don't already have a server tool with this name
         if (!serverTools[t.function.name]) {
-          clientTools[t.function.name] = defineTool({
+          clientTools[t.function.name] = {
             description: t.function.description ?? "",
-            parameters: jsonSchema(
+            inputSchema: jsonSchema(
               t.function.parameters ?? { type: "object", properties: {} }
             ),
             // No execute — the model can call it but the client handles execution
-          });
+          };
         }
       }
     }
