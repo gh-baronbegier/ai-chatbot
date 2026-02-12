@@ -169,20 +169,21 @@ export async function POST(request: Request) {
 
   // Only enable thinking for Opus (large output budget); Haiku/Sonnet have smaller limits
   const isOpus = internalModelId.includes("claude-opus");
-  const providerOptions: Record<string, unknown> | undefined =
+  const providerOptions = (
     isClaudeMax && isOpus
       ? {
           anthropic: {
-            thinking: { type: "enabled", budgetTokens: 128_000 },
+            thinking: { type: "enabled" as const, budgetTokens: 128_000 },
           },
         }
       : isClaudeMax
         ? {
             anthropic: {
-              thinking: { type: "enabled", budgetTokens: 10_000 },
+              thinking: { type: "enabled" as const, budgetTokens: 10_000 },
             },
           }
-        : undefined;
+        : undefined
+  ) satisfies Parameters<typeof streamText>[0]["providerOptions"];
 
   // Cap maxOutputTokens based on model
   const modelMaxOutput = isOpus ? 128_000 : isClaudeMax ? 64_000 : 128_000;
