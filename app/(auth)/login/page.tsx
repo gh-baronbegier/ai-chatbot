@@ -23,7 +23,8 @@ export default function Page() {
     }
   );
 
-  const { update: updateSession } = useSession();
+  const session = useSession();
+  const updateSession = session?.update;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {

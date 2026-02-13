@@ -1,10 +1,19 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef } from "react";
 import { useMessages } from "@/hooks/use-messages";
-import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { useDataStream } from "./data-stream-provider";
-import { PreviewMessage, ThinkingMessage } from "./message";
+
+const PreviewMessage = dynamic(
+  () => import("./message").then((m) => ({ default: m.PreviewMessage })),
+  { ssr: false },
+);
+
+const ThinkingMessage = dynamic(
+  () => import("./message").then((m) => ({ default: m.ThinkingMessage })),
+  { ssr: false },
+);
 
 const INTERACTIVE_SELECTOR =
   'a, button, input, textarea, select, [role="button"], [contenteditable="true"], pre, img, video, [data-interactive]';
@@ -13,12 +22,10 @@ type MessagesProps = {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
   chatId: string;
   status: UseChatHelpers<ChatMessage>["status"];
-  votes: Vote[] | undefined;
   messages: ChatMessage[];
   setMessages: UseChatHelpers<ChatMessage>["setMessages"];
   regenerate: UseChatHelpers<ChatMessage>["regenerate"];
   isReadonly: boolean;
-  isArtifactVisible: boolean;
   onBackgroundTap?: () => void;
   inputSlot?: React.ReactNode;
 };
@@ -27,7 +34,6 @@ function PureMessages({
   addToolApprovalResponse,
   chatId,
   status,
-  votes,
   messages,
   setMessages,
   regenerate,
@@ -40,7 +46,6 @@ function PureMessages({
     endRef: messagesEndRef,
     isAtBottom,
     scrollToBottom,
-    hasSentMessage,
   } = useMessages({
     status,
   });
@@ -109,15 +114,7 @@ function PureMessages({
               key={message.id}
               message={message}
               regenerate={regenerate}
-              requiresScrollPadding={
-                hasSentMessage && index === messages.length - 1
-              }
               setMessages={setMessages}
-              vote={
-                votes
-                  ? votes.find((vote) => vote.messageId === message.id)
-                  : undefined
-              }
             />
           ))}
 

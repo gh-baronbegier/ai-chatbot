@@ -21,7 +21,7 @@ import {
 import { useModel } from "./model-provider";
 import {
   type ChatHistory,
-} from "./sidebar-history";
+} from "@/lib/chat-history-keys";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -496,7 +496,6 @@ export default function NavPanelContent({
   };
 
 
-  const viewLabel = view === "chats" ? "Chats" : "Model";
   const selectedModelLabel = MODELS.find((m) => m.id === selectedModel)?.label ?? "Claude Opus 4.6";
 
   // Sync view, menu state, and model label to <html> so the global bottom bar script can read them

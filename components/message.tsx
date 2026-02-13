@@ -1,47 +1,31 @@
 "use client";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useState } from "react";
-import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
-import { cn, sanitizeText } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
-import { DocumentToolResult } from "./document";
-import { DocumentPreview } from "./document-preview";
 import { MessageContent } from "./elements/message";
 import { Response } from "./elements/response";
-import {
-  Tool,
-  ToolContent,
-  ToolHeader,
-  ToolInput,
-  ToolOutput,
-} from "./elements/tool";
-import { MessageActions } from "./message-actions";
 import { MessageEditor } from "./message-editor";
-import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
-import { Weather } from "./weather";
+import { renderToolPart } from "./tool-renderers";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
   chatId,
   message,
-  vote,
   isLoading,
   setMessages,
   regenerate,
   isReadonly,
-  requiresScrollPadding: _requiresScrollPadding,
 }: {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
   chatId: string;
   message: ChatMessage;
-  vote: Vote | undefined;
   isLoading: boolean;
   setMessages: UseChatHelpers<ChatMessage>["setMessages"];
   regenerate: UseChatHelpers<ChatMessage>["regenerate"];
   isReadonly: boolean;
-  requiresScrollPadding: boolean;
 }) => {
   const [mode, setMode] = useState<"view" | "edit">("view");
 
@@ -125,14 +109,14 @@ const PurePreviewMessage = ({
                   >
                     <MessageContent
                       className={cn({
-                        "wrap-break-word w-fit text-right text-black dark:text-white":
+                        "wrap-break-word w-fit text-right text-foreground":
                           message.role === "user",
                         "bg-transparent px-0 py-0 text-left":
                           message.role === "assistant",
                       })}
                       data-testid="message-content"
                     >
-                      <Response>{sanitizeText(part.text)}</Response>
+                      <Response>{part.text}</Response>
                     </MessageContent>
                   </div>
                 );
@@ -158,221 +142,20 @@ const PurePreviewMessage = ({
               }
             }
 
-            if (type === "tool-getWeather") {
-              const { toolCallId, state } = part;
-              const approvalId = (part as { approval?: { id: string } })
-                .approval?.id;
-              const isDenied =
-                state === "output-denied" ||
-                (state === "approval-responded" &&
-                  (part as { approval?: { approved?: boolean } }).approval
-                    ?.approved === false);
-              const widthClass = "w-[min(100%,450px)]";
-
-              if (state === "output-available") {
-                return (
-                  <div className={widthClass} key={toolCallId}>
-                    <Weather weatherAtLocation={part.output} />
-                  </div>
-                );
-              }
-
-              if (isDenied) {
-                return (
-                  <div className={widthClass} key={toolCallId}>
-                    <Tool className="w-full" defaultOpen={true}>
-                      <ToolHeader
-                        state="output-denied"
-                        type="tool-getWeather"
-                      />
-                      <ToolContent>
-                        <div className="px-4 py-3 text-muted-foreground text-base leading-[1.625rem] tracking-[-0.025rem]">
-                          Weather lookup was denied.
-                        </div>
-                      </ToolContent>
-                    </Tool>
-                  </div>
-                );
-              }
-
-              if (state === "approval-responded") {
-                return (
-                  <div className={widthClass} key={toolCallId}>
-                    <Tool className="w-full" defaultOpen={true}>
-                      <ToolHeader state={state} type="tool-getWeather" />
-                      <ToolContent>
-                        <ToolInput input={part.input} />
-                      </ToolContent>
-                    </Tool>
-                  </div>
-                );
-              }
-
-              return (
-                <div className={widthClass} key={toolCallId}>
-                  <Tool className="w-full" defaultOpen={true}>
-                    <ToolHeader state={state} type="tool-getWeather" />
-                    <ToolContent>
-                      {(state === "input-available" ||
-                        state === "approval-requested") && (
-                        <ToolInput input={part.input} />
-                      )}
-                      {state === "approval-requested" && approvalId && (
-                        <div className="flex items-center justify-end gap-2 border-t px-4 py-3">
-                          <button
-                            className="rounded-md px-3 py-1.5 text-muted-foreground text-sm hover:bg-muted hover:text-foreground"
-                            onClick={() => {
-                              addToolApprovalResponse({
-                                id: approvalId,
-                                approved: false,
-                                reason: "User denied weather lookup",
-                              });
-                            }}
-                            type="button"
-                          >
-                            Deny
-                          </button>
-                          <button
-                            className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm hover:bg-primary/90"
-                            onClick={() => {
-                              addToolApprovalResponse({
-                                id: approvalId,
-                                approved: true,
-                              });
-                            }}
-                            type="button"
-                          >
-                            Allow
-                          </button>
-                        </div>
-                      )}
-                    </ToolContent>
-                  </Tool>
-                </div>
-              );
-            }
-
-            if (type === "tool-createDocument") {
-              const { toolCallId } = part;
-
-              if (part.output && "error" in part.output) {
-                return (
-                  <div
-                    className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-500 dark:bg-red-950/50"
-                    key={toolCallId}
-                  >
-                    Error creating document: {String(part.output.error)}
-                  </div>
-                );
-              }
-
-              return (
-                <DocumentPreview
-                  isReadonly={isReadonly}
-                  key={toolCallId}
-                  result={part.output}
-                />
-              );
-            }
-
-            if (type === "tool-updateDocument") {
-              const { toolCallId } = part;
-
-              if (part.output && "error" in part.output) {
-                return (
-                  <div
-                    className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-500 dark:bg-red-950/50"
-                    key={toolCallId}
-                  >
-                    Error updating document: {String(part.output.error)}
-                  </div>
-                );
-              }
-
-              return (
-                <div className="relative" key={toolCallId}>
-                  <DocumentPreview
-                    args={{ ...part.output, isUpdate: true }}
-                    isReadonly={isReadonly}
-                    result={part.output}
-                  />
-                </div>
-              );
-            }
-
-            if (type === "tool-requestSuggestions") {
-              const { toolCallId, state } = part;
-
-              return (
-                <Tool defaultOpen={true} key={toolCallId}>
-                  <ToolHeader state={state} type="tool-requestSuggestions" />
-                  <ToolContent>
-                    {state === "input-available" && (
-                      <ToolInput input={part.input} />
-                    )}
-                    {state === "output-available" && (
-                      <ToolOutput
-                        errorText={undefined}
-                        output={
-                          "error" in part.output ? (
-                            <div className="rounded border p-2 text-red-500">
-                              Error: {String(part.output.error)}
-                            </div>
-                          ) : (
-                            <DocumentToolResult
-                              isReadonly={isReadonly}
-                              result={part.output}
-                              type="request-suggestions"
-                            />
-                          )
-                        }
-                      />
-                    )}
-                  </ToolContent>
-                </Tool>
-              );
-            }
-
-            if (type === "dynamic-tool") {
-              const { toolCallId, toolName, state } = part as any;
-              if (state === "output-available") return null;
-              return (
-                <Tool defaultOpen={true} key={toolCallId}>
-                  <ToolHeader state={state} type={`tool-${toolName}` as any} />
-                  <ToolContent>
-                    <ToolInput input={(part as any).input} />
-                  </ToolContent>
-                </Tool>
-              );
-            }
-
-            if (type.startsWith("tool-")) {
-              const toolPart = part as any;
-              const { toolCallId, state } = toolPart;
-              if (state === "output-available") return null;
-              return (
-                <Tool defaultOpen={true} key={toolCallId}>
-                  <ToolHeader state={state} type={type as `tool-${string}`} />
-                  <ToolContent>
-                    <ToolInput input={toolPart.input} />
-                  </ToolContent>
-                </Tool>
-              );
+            if (
+              type === "dynamic-tool" ||
+              type.startsWith("tool-")
+            ) {
+              return renderToolPart(type, {
+                part,
+                addToolApprovalResponse,
+                isReadonly,
+              });
             }
 
             return null;
           })}
 
-          {/* {!isReadonly && (
-            <MessageActions
-              chatId={chatId}
-              isLoading={isLoading}
-              key={`action-${message.id}`}
-              message={message}
-              setMode={setMode}
-              vote={vote}
-            />
-          )} */}
         </div>
       </div>
     </div>

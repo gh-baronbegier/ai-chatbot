@@ -1,3 +1,5 @@
+export const preferredRegion = "pdx1";
+
 import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
@@ -9,34 +11,19 @@ import {
 } from "ai";
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
-import { auth, type UserType } from "@/app/(auth)/auth";
-import { entitlementsByUserType } from "@/lib/ai/entitlements";
+import { auth } from "@/app/(auth)/auth";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getFallbackModel, getLanguageModel } from "@/lib/ai/providers";
-import { createDocument } from "@/lib/ai/tools/create-document";
 import { getBaronLocation } from "@/lib/ai/tools/get-baron-location";
 import { getWeather } from "@/lib/ai/tools/get-weather";
-import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
-import { updateDocument } from "@/lib/ai/tools/update-document";
 import { queryWolframAlpha } from "@/lib/ai/tools/wolfram-alpha";
 import { executeCode } from "@/lib/ai/tools/e2b";
-import { getAlphaVantageTools } from "@/lib/ai/mcp/alphavantage";
-import { getAWSTools } from "@/lib/ai/mcp/aws";
-import { getExaTools } from "@/lib/ai/mcp/exa";
-import { getGitHubTools } from "@/lib/ai/mcp/github";
-import { getGoogleMapsTools } from "@/lib/ai/mcp/google-maps";
-import { getNeonTools } from "@/lib/ai/mcp/neon";
-import { getNotionTools } from "@/lib/ai/mcp/notion";
-import { getStripeTools } from "@/lib/ai/mcp/stripe";
-import { getTerraformTools } from "@/lib/ai/mcp/terraform";
-import { getLinearTools } from "@/lib/ai/mcp/linear";
-import { getVercelTools } from "@/lib/ai/mcp/vercel";
+import { loadAllMCPTools } from "@/lib/ai/mcp";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
   deleteChatById,
   getChatById,
-  getMessageCountByUserId,
   getMessagesByChatId,
   saveChat,
   saveMessages,
@@ -50,7 +37,78 @@ import { convertToUIMessages, generateUUID } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
-export const maxDuration = 300;
+export const maxDuration = 800;
+
+function resolveThinkingBudget(
+  selectedChatModel: string,
+  clientBudget: number | null | undefined
+): number | null {
+  if (clientBudget != null) return clientBudget;
+
+  const thinkMatch = selectedChatModel.match(/-think-(low|medium|high)$/);
+  if (thinkMatch) {
+    return { low: 10_000, medium: 32_000, high: 128_000 }[thinkMatch[1]]!;
+  }
+
+  const isClaudeMaxModel =
+    selectedChatModel.startsWith("claude-max/") ||
+    selectedChatModel.startsWith("claude-max-direct/");
+  if (isClaudeMaxModel) return 128_000;
+
+  return null;
+}
+
+function resolveMaxTokens(
+  thinkingBudget: number | null,
+  enableThinking: boolean,
+  clientMaxTokens: number | null | undefined
+): number {
+  if (clientMaxTokens != null) return Math.min(clientMaxTokens, 128_000);
+
+  const tokens = thinkingBudget
+    ? thinkingBudget + 16_000
+    : enableThinking
+      ? 26_000
+      : 16_000;
+
+  return Math.min(tokens, 128_000);
+}
+
+function clampThinkingBudget(
+  thinkingBudget: number | null,
+  maxTokens: number
+): number | null {
+  if (thinkingBudget && thinkingBudget >= maxTokens) {
+    return maxTokens - 1000;
+  }
+  return thinkingBudget;
+}
+
+function buildToolConfig(
+  isReasoningModel: boolean,
+  mcpToolNames: string[],
+  mcpTools: Record<string, any>
+) {
+  const activeTools = isReasoningModel
+    ? []
+    : [
+        "getWeather",
+        "getBaronLocation",
+        "queryWolframAlpha",
+        "executeCode",
+        ...mcpToolNames,
+      ];
+
+  const tools = {
+    getWeather,
+    getBaronLocation,
+    queryWolframAlpha,
+    executeCode,
+    ...mcpTools,
+  };
+
+  return { activeTools, tools };
+}
 
 function getStreamContext() {
   try {
@@ -84,11 +142,8 @@ export async function POST(request: Request) {
       maxTokens: clientMaxTokens,
     } = requestBody;
 
-    console.log("[chat] selectedChatModel:", selectedChatModel, "| thinkingBudget:", clientBudget, "| maxTokens:", clientMaxTokens);
-
     const session = await auth();
     const userId = session?.user?.id ?? "guest";
-    const userType: UserType = session?.user?.type ?? "guest";
 
     const isToolApprovalFlow = Boolean(messages);
 
@@ -147,99 +202,31 @@ export async function POST(request: Request) {
     const isOpenAICodexModel =
       selectedChatModel.startsWith("openai-codex-direct/");
 
-    // Thinking budget: client slider > model ID suffix > max for claude-max models > null
-    const thinkMatch = selectedChatModel.match(/-think-(low|medium|high)$/);
-    let thinkingBudget = clientBudget ?? (thinkMatch
-      ? { low: 10_000, medium: 32_000, high: 128_000 }[thinkMatch[1]]
-      : isClaudeMaxModel ? 128_000 : null);
-    const enableThinking = isReasoningModel || thinkingBudget !== null;
-
-    // Max tokens: client slider > derived from thinking budget > defaults
-    let maxTokens = clientMaxTokens ?? (thinkingBudget
-      ? thinkingBudget + 16_000
-      : enableThinking
-        ? 26_000
-        : 16_000);
-
-    // Anthropic: max_tokens capped at 128K, and must be > budget_tokens
-    const MODEL_MAX_OUTPUT = 128_000;
-    if (maxTokens > MODEL_MAX_OUTPUT) {
-      maxTokens = MODEL_MAX_OUTPUT;
-    }
-    if (thinkingBudget && thinkingBudget >= maxTokens) {
-      // Shrink budget to leave room for response output
-      thinkingBudget = maxTokens - 1000;
-    }
-
-    console.log("[chat] resolved → enableThinking:", enableThinking, "| thinkingBudget:", thinkingBudget, "| maxTokens:", maxTokens);
+    const resolvedBudget = resolveThinkingBudget(selectedChatModel, clientBudget);
+    const enableThinking = isReasoningModel || resolvedBudget !== null;
+    const maxTokens = resolveMaxTokens(resolvedBudget, enableThinking, clientMaxTokens);
+    const thinkingBudget = clampThinkingBudget(resolvedBudget, maxTokens);
 
     const modelMessages = await convertToModelMessages(uiMessages);
 
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
-        const [neon, github, vercel, notion, terraform, aws, exa, alphaVantage, googleMaps, stripe, linear] = await Promise.all([
-          getNeonTools(),
-          getGitHubTools(),
-          getVercelTools(),
-          getNotionTools(),
-          getTerraformTools(),
-          getAWSTools(),
-          getExaTools(),
-          getAlphaVantageTools(),
-          getGoogleMapsTools(),
-          getStripeTools(),
-          getLinearTools(),
-        ]);
+        const mcp = await loadAllMCPTools();
+        const { activeTools, tools } = buildToolConfig(
+          isReasoningModel,
+          mcp.toolNames,
+          mcp.tools
+        );
 
         const sharedStreamOpts = {
           system: systemPrompt({ selectedChatModel, requestHints }),
           messages: modelMessages,
           stopWhen: stepCountIs(1000),
-          experimental_activeTools: isReasoningModel
-            ? []
-            : [
-                "getWeather",
-                "getBaronLocation",
-                // "createDocument",
-                // "updateDocument",
-                "requestSuggestions",
-                "queryWolframAlpha",
-                "executeCode",
-                ...(neon.toolNames as string[]),
-                ...(github.toolNames as string[]),
-                ...(vercel.toolNames as string[]),
-                ...(notion.toolNames as string[]),
-                ...(terraform.toolNames as string[]),
-                ...(aws.toolNames as string[]),
-                ...(exa.toolNames as string[]),
-                ...(alphaVantage.toolNames as string[]),
-                ...(googleMaps.toolNames as string[]),
-                ...(stripe.toolNames as string[]),
-                ...(linear.toolNames as string[]),
-              ] as any,
-          tools: {
-            getWeather,
-            getBaronLocation,
-            // createDocument: createDocument({ session, dataStream }),
-            // updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({ session, dataStream }),
-            queryWolframAlpha,
-            executeCode,
-            ...neon.tools,
-            ...github.tools,
-            ...vercel.tools,
-            ...notion.tools,
-            ...terraform.tools,
-            ...aws.tools,
-            ...exa.tools,
-            ...alphaVantage.tools,
-            ...googleMaps.tools,
-            ...stripe.tools,
-            ...linear.tools,
-          },
+          experimental_activeTools: activeTools as any,
+          tools,
           onFinish: async () => {
-            await Promise.all([neon.cleanup(), github.cleanup(), vercel.cleanup(), notion.cleanup(), terraform.cleanup(), aws.cleanup(), exa.cleanup(), alphaVantage.cleanup(), googleMaps.cleanup(), stripe.cleanup(), linear.cleanup()]);
+            await mcp.cleanup();
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
@@ -290,13 +277,7 @@ export async function POST(request: Request) {
 
           // Force await to catch stream-level errors early
           const res = await result.response;
-          console.log("[chat] response modelId:", res.modelId);
-          console.log("[chat] response headers:", JSON.stringify(res.headers, null, 2));
           writeModelSelection(res.modelId, false);
-
-          Promise.resolve(result.usage).then((usage) => {
-            console.log("[chat] token usage:", JSON.stringify(usage));
-          }).catch(() => {});
         } catch (primaryError) {
           console.warn("[chat] Primary model failed, falling back to Groq:", primaryError);
 
@@ -309,12 +290,7 @@ export async function POST(request: Request) {
           dataStream.merge(fallbackResult.toUIMessageStream({ sendReasoning: true }));
 
           const fallbackRes = await fallbackResult.response;
-          console.log("[chat] fallback response modelId:", fallbackRes.modelId);
           writeModelSelection(fallbackRes.modelId, true);
-
-          Promise.resolve(fallbackResult.usage).then((usage) => {
-            console.log("[chat] fallback token usage:", JSON.stringify(usage));
-          }).catch(() => {});
         }
 
         if (titlePromise) {
@@ -405,7 +381,21 @@ export async function DELETE(request: Request) {
     return new ChatSDKError("bad_request:api").toResponse();
   }
 
-  const chat = await getChatById({ id });
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return new ChatSDKError("unauthorized:chat").toResponse();
+  }
+
+  const chatToDelete = await getChatById({ id });
+
+  if (!chatToDelete) {
+    return new ChatSDKError("not_found:chat").toResponse();
+  }
+
+  if (chatToDelete.userId !== session.user.id) {
+    return new ChatSDKError("forbidden:chat").toResponse();
+  }
 
   const deletedChat = await deleteChatById({ id });
 

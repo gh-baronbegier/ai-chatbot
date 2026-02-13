@@ -68,8 +68,12 @@ export const {
       id: "guest",
       credentials: {},
       async authorize() {
-        const [guestUser] = await createGuestUser();
-        return { ...guestUser, type: "guest" };
+        try {
+          const [guestUser] = await createGuestUser();
+          return { ...guestUser, type: "guest" };
+        } catch {
+          return null;
+        }
       },
     }),
   ],

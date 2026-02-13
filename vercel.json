@@ -1,3 +1,21 @@
 {
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "functions": {
+    "app/(chat)/api/chat/route.ts": {
+      "memory": 3009,
+      "maxDuration": 800
+    },
+    "app/(chat)/api/fork/route.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "app/(chat)/api/history/route.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "app/(chat)/api/tools/route.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
 }

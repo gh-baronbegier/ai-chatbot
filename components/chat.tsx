@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import useSWR, { useSWRConfig } from "swr";
+import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import {
   AlertDialog,
@@ -17,15 +17,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAlwaysActiveTextarea } from "@/hooks/use-always-active-textarea";
-import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import { useModel } from "./model-provider";
-import type { Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
-import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
-import { Artifact } from "./artifact";
+import { fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
 import {
   PromptInput,
@@ -35,7 +32,7 @@ import {
 import { ArrowUpIcon, VoiceWaveIcon } from "./icons";
 import { Messages } from "./messages";
 import { NavPanel } from "./nav-panel";
-import { getChatHistoryPaginationKey } from "./sidebar-history";
+import { getChatHistoryPaginationKey } from "@/lib/chat-history-keys";
 import { toast } from "./toast";
 import type { VisibilityType } from "./visibility-selector";
 
@@ -86,27 +83,10 @@ export function Chat({
   }, [isFork]);
 
   const [input, setInput] = useState<string>(initialInput);
-  // const [showPlaceholder, setShowPlaceholder] = useState(() => {
-  //   if (typeof window === 'undefined') return true;
-  //   return !localStorage.getItem('bb-sent');
-  // });
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
   const { thinkingBudget, maxTokens, selectedModel } = useModel();
-  const thinkingBudgetRef = useRef(thinkingBudget);
-  const maxTokensRef = useRef(maxTokens);
-  const selectedModelRef = useRef(selectedModel);
-
-  useEffect(() => {
-    thinkingBudgetRef.current = thinkingBudget;
-  }, [thinkingBudget]);
-
-  useEffect(() => {
-    maxTokensRef.current = maxTokens;
-  }, [maxTokens]);
-
-  useEffect(() => {
-    selectedModelRef.current = selectedModel;
-  }, [selectedModel]);
+  const latestRef = useRef({ thinkingBudget, maxTokens, selectedModel });
+  latestRef.current = { thinkingBudget, maxTokens, selectedModel };
 
   const {
     messages,
@@ -155,10 +135,10 @@ export function Chat({
             ...(isToolApprovalContinuation
               ? { messages: request.messages }
               : { message: lastMessage }),
-            selectedChatModel: selectedModelRef.current,
+            selectedChatModel: latestRef.current.selectedModel,
             selectedVisibilityType: visibilityType,
-            thinkingBudget: thinkingBudgetRef.current,
-            maxTokens: maxTokensRef.current,
+            thinkingBudget: latestRef.current.thinkingBudget,
+            maxTokens: latestRef.current.maxTokens,
             ...request.body,
           },
         };
@@ -203,16 +183,9 @@ export function Chat({
     }
   }, [query, sendMessage, hasAppendedQuery, id]);
 
-  const { data: votes } = useSWR<Vote[]>(
-    messages.length >= 2 ? `/api/vote?chatId=${id}` : null,
-    fetcher
-  );
-
   const [isNavPanelOpen, setIsNavPanelOpen] = useState(false);
   const toggleNavPanel = useCallback(() => setIsNavPanelOpen((prev) => !prev), []);
   const closeNavPanel = useCallback(() => setIsNavPanelOpen(false), []);
-  const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
-
   // Sync data-nav-panel-open attribute so the top bar script can update its icons
   useEffect(() => {
     document.documentElement.dataset.navPanelOpen = isNavPanelOpen ? "true" : "false";
@@ -230,10 +203,6 @@ export function Chat({
       parts: [{ type: "text", text: input }],
     });
     setInput("");
-    // if (showPlaceholder) {
-    //   localStorage.setItem('bb-sent', '1');
-    //   setShowPlaceholder(false);
-    // }
   }, [input, setInput, sendMessage, id]);
 
   // Listen for toggle-nav-panel custom event from the top bar script
@@ -272,14 +241,12 @@ export function Chat({
         <Messages
           addToolApprovalResponse={addToolApprovalResponse}
           chatId={id}
-          isArtifactVisible={isArtifactVisible}
           isReadonly={isReadonly}
           messages={messages}
           onBackgroundTap={focusTextarea}
           regenerate={regenerate}
           setMessages={setMessages}
           status={status}
-          votes={votes}
           inputSlot={
               <PromptInput
                 className="rounded-none border-none bg-transparent px-0 py-0 shadow-none flex flex-col justify-center"
@@ -296,18 +263,18 @@ export function Chat({
                 }}
               >
                 <div className="flex items-center">
-                  <button type="button" className="flex shrink-0 items-center justify-center text-black dark:text-white opacity-0 pointer-events-none">
+                  <button type="button" className="flex shrink-0 items-center justify-center text-foreground opacity-0 pointer-events-none">
                     <VoiceWaveIcon size={20} />
                   </button>
                   <PromptInputTextarea
                     autoFocus
-                    className="min-h-0! h-auto! grow resize-none border-0! border-none! bg-transparent pl-2 pr-4 py-3 text-base leading-[1.625rem] tracking-[-0.025rem] text-right outline-none ring-0 text-black dark:text-white [-ms-overflow-style:none] [scrollbar-width:none] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-scrollbar]:hidden"
+                    className="min-h-0! h-auto! grow resize-none border-0! border-none! bg-transparent pl-2 pr-4 py-3 text-base leading-[1.625rem] tracking-[-0.025rem] text-right outline-none ring-0 text-foreground [-ms-overflow-style:none] [scrollbar-width:none] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-scrollbar]:hidden"
                     data-testid="multimodal-input"
                     disableAutoResize={true}
                     maxHeight={200}
                     minHeight={0}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask Anything"
+                    placeholder="ask anything"
                     ref={textareaRef}
                     rows={1}
                     value={input}
@@ -327,19 +294,6 @@ export function Chat({
           <NavPanel isOpen={isNavPanelOpen} onClose={closeNavPanel} />
         </div>
       </div>
-
-      <Artifact
-        addToolApprovalResponse={addToolApprovalResponse}
-        chatId={id}
-        isReadonly={isReadonly}
-        messages={messages}
-        regenerate={regenerate}
-        sendMessage={sendMessage}
-        setMessages={setMessages}
-        status={status}
-        stop={stop}
-        votes={votes}
-      />
 
       <AlertDialog
         onOpenChange={setShowCreditCardAlert}

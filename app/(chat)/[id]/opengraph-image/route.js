@@ -21,6 +21,14 @@ function truncate(str, maxLength = 50) {
   return str.slice(0, maxLength);
 }
 
+function getFontSize(len) {
+  if (len <= 10) return 176;
+  if (len <= 20) return 140;
+  if (len <= 30) return 110;
+  if (len <= 40) return 80;
+  return 64;
+}
+
 export async function GET(_request, { params }) {
   const { id } = await params;
 
@@ -83,7 +91,7 @@ export async function GET(_request, { params }) {
         >
           <span style={{
             color: "white",
-            fontSize: 96,
+            fontSize: getFontSize(title.length),
             fontWeight: 700,
             background: "#000",
             padding: 0,

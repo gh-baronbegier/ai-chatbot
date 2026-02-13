@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { auth } from "@/app/(auth)/auth";
-import { Chat } from "@/components/chat";
-import { DataStreamHandler } from "@/components/data-stream-handler";
 import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
 import { convertToUIMessages } from "@/lib/utils";
+import { ChatSkeleton } from "../chat-skeleton";
+import { ChatPageClient } from "./chat-page-client";
 
 export async function generateMetadata({
   params,
@@ -33,7 +33,7 @@ export async function generateMetadata({
 
 export default function Page(props: { params: Promise<{ id: string }> }) {
   return (
-    <Suspense fallback={<div className="flex h-dvh" />}>
+    <Suspense fallback={<ChatSkeleton />}>
       <ChatPage params={props.params} />
     </Suspense>
   );
@@ -41,45 +41,32 @@ export default function Page(props: { params: Promise<{ id: string }> }) {
 
 async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const chat = await getChatById({ id });
+
+  // Parallelize chat fetch + auth.
+  const [chat, session] = await Promise.all([
+    getChatById({ id }),
+    auth(),
+  ]);
 
   if (!chat) {
     redirect("/");
   }
 
-  const session = await auth();
+  if (chat.visibility === "private") {
+    if (!session?.user?.id || session.user.id !== chat.userId) {
+      redirect("/");
+    }
+  }
 
-  // TODO: Re-enable auth checks — temporarily allowing all users to view chats by URL
-  // if (!session) {
-  //   redirect("/api/auth/guest");
-  // }
-
-  // if (chat.visibility === "private") {
-  //   if (!session.user) {
-  //     return notFound();
-  //   }
-
-  //   if (session.user.id !== chat.userId) {
-  //     return notFound();
-  //   }
-  // }
-
-  const messagesFromDb = await getMessagesByChatId({
-    id,
-  });
-
+  const messagesFromDb = await getMessagesByChatId({ id });
   const uiMessages = convertToUIMessages(messagesFromDb);
 
   return (
-    <>
-      <Chat
-        autoResume={true}
-        id={chat.id}
-        initialMessages={uiMessages}
-        initialVisibilityType={chat.visibility}
-        isReadonly={session?.user?.id !== chat.userId}
-      />
-      <DataStreamHandler />
-    </>
+    <ChatPageClient
+      id={chat.id}
+      initialMessages={uiMessages}
+      initialVisibilityType={chat.visibility}
+      isReadonly={session?.user?.id !== chat.userId}
+    />
   );
 }
