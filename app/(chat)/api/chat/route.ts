@@ -19,6 +19,7 @@ import { getWeather } from "@/lib/ai/tools/get-weather";
 import { queryWolframAlpha } from "@/lib/ai/tools/wolfram-alpha";
 import { executeCode } from "@/lib/ai/tools/e2b";
 import { loadAllMCPTools } from "@/lib/ai/mcp";
+import { MODELS } from "@/lib/ai/models";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
@@ -34,7 +35,7 @@ import type { DBMessage } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
-import { generateTitleFromUserMessage } from "../../actions";
+
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
 export const maxDuration = 800;
@@ -191,12 +192,13 @@ export async function POST(request: Request) {
         messagesFromDb = await getMessagesByChatId({ id });
       }
     } else if (message?.role === "user") {
+      const modelLabel = MODELS.find((m) => m.id === selectedChatModel)?.label ?? selectedChatModel;
       await saveChat({
         id,
         userId: userId,
-        title: "New chat",
+        title: modelLabel,
       });
-      titlePromise = generateTitleFromUserMessage({ message });
+      titlePromise = Promise.resolve(modelLabel);
     }
 
     const uiMessages = isToolApprovalFlow

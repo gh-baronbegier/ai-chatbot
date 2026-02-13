@@ -1,20 +1,17 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
+import { connection } from "next/server";
 
-import { auth } from "@/app/(auth)/auth";
-import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
-import { convertToUIMessages } from "@/lib/utils";
-import { ChatSkeleton } from "../chat-skeleton";
+import { getChatById } from "@/lib/db/queries";
 import { ChatPageClient } from "./chat-page-client";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  await connection();
   const { id } = await params;
   try {
     const chat = await getChatById({ id });
-    const title = chat?.title ?? "AI Chat";
+    const title = chat?.title ?? "Agent";
     return {
       title,
       openGraph: {
@@ -27,39 +24,13 @@ export async function generateMetadata({
       },
     };
   } catch {
-    return { title: "AI Chat" };
+    return { title: "Agent" };
   }
 }
 
-export default function Page(props: { params: Promise<{ id: string }> }) {
-  return (
-    <Suspense fallback={<ChatSkeleton />}>
-      <ChatPage params={props.params} />
-    </Suspense>
-  );
-}
-
-async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function Page({
+  params,
+}: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-
-  // Parallelize chat fetch + auth.
-  const [chat, session] = await Promise.all([
-    getChatById({ id }),
-    auth(),
-  ]);
-
-  if (!chat) {
-    redirect("/");
-  }
-
-  const messagesFromDb = await getMessagesByChatId({ id });
-  const uiMessages = convertToUIMessages(messagesFromDb);
-
-  return (
-    <ChatPageClient
-      id={chat.id}
-      initialMessages={uiMessages}
-      isReadonly={session?.user?.id !== chat.userId}
-    />
-  );
+  return <ChatPageClient id={id} />;
 }

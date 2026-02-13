@@ -20,8 +20,7 @@ const nextConfig: NextConfig = {
 
   experimental: {
     // Inline CSS into HTML to remove render-blocking stylesheet request.
-    // Tradeoff: bigger HTML. Enable via env var to test.
-    ...(process.env.INLINE_CSS === "1" ? { inlineCss: true } : {}),
+    inlineCss: true,
 
     // Tree-shake barrel exports for heavy packages.
     optimizePackageImports: [
@@ -58,7 +57,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/ui-shell.v1.js",
+        source: "/ui-shell.v2.js",
         headers: [
           {
             key: "Cache-Control",

@@ -1,8 +1,7 @@
 "use client";
 
-import { Suspense, lazy, useEffect, useRef } from "react";
-
-const NavPanelContent = lazy(() => import("./nav-panel-content"));
+import { Suspense, useEffect, useRef } from "react";
+import NavPanelContent from "./nav-panel-content";
 
 interface NavPanelProps {
   isOpen: boolean;
@@ -45,36 +44,11 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
   return (
     <div
       ref={panelRef}
-      className="my-[0.375rem] flex flex-1 flex-col overflow-hidden border border-foreground bg-background"
+      className="mt-[0.375rem] flex flex-1 flex-col overflow-hidden bg-background"
     >
-      <Suspense fallback={<NavPanelSkeleton />}>
+      <Suspense fallback={null}>
         <NavPanelContent onNavigate={onClose} />
       </Suspense>
-    </div>
-  );
-}
-
-function NavPanelSkeleton() {
-  return (
-    <div className="p-2">
-      <div className="px-2 py-1 text-xs text-black/50 dark:text-white/50">Today</div>
-      <div className="flex flex-col">
-        {[44, 32, 28, 64, 52].map((item) => (
-          <div
-            className="flex h-8 items-center gap-2 rounded-md px-2"
-            key={item}
-          >
-            <div
-              className="h-4 max-w-(--skeleton-width) flex-1 rounded-md bg-black/10 dark:bg-white/10"
-              style={
-                {
-                  "--skeleton-width": `${item}%`,
-                } as React.CSSProperties
-              }
-            />
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

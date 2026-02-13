@@ -5,14 +5,14 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://a.baronbegier.com"),
   title: {
-    default: "AI Chat",
+    default: "Agent",
     template: "%s",
   },
-  description: "AI Chat",
+  description: "Agent",
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "AI Chat",
-    description: "AI Chat",
+    title: "Agent",
+    description: "Agent",
     images: ["/opengraph-image"],
   },
   twitter: {
@@ -123,7 +123,7 @@ export default function RootLayout({
           </div>
         </div>
 
-        <script src="/ui-shell.v1.js" defer />
+        <script src="/ui-shell.v2.js" defer />
       </body>
     </html>
   );

@@ -20,7 +20,6 @@ export type CustomUIDataTypes = {
   "chat-model": {
     requested: string;
     resolved: string;
-    fallback: boolean;
   };
 };
 

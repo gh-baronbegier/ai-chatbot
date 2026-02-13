@@ -1,14 +1,40 @@
 "use client";
 import type { UseChatHelpers } from "@ai-sdk/react";
-import { useState } from "react";
+import dynamic from "next/dynamic";
+import { memo, useState, use } from "react";
 import type { ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
 import { MessageContent } from "./elements/message";
 import { Response } from "./elements/response";
-import { MessageEditor } from "./message-editor";
-import { PreviewAttachment } from "./preview-attachment";
-import { renderToolPart } from "./tool-renderers";
+
+const MessageEditor = dynamic(
+  () => import("./message-editor").then((mod) => ({ default: mod.MessageEditor })),
+  { ssr: false },
+);
+
+const PreviewAttachment = dynamic(
+  () => import("./preview-attachment").then((mod) => ({ default: mod.PreviewAttachment })),
+  { ssr: false },
+);
+
+// Lazy-load tool-renderers — the module is loaded once on first use
+const toolRenderersPromise = import("./tool-renderers");
+
+function ToolPartRenderer({
+  type,
+  part,
+  addToolApprovalResponse,
+  isReadonly,
+}: {
+  type: string;
+  part: any;
+  addToolApprovalResponse: any;
+  isReadonly: boolean;
+}) {
+  const mod = use(toolRenderersPromise);
+  return <>{mod.renderToolPart(type, { part, addToolApprovalResponse, isReadonly })}</>;
+}
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -146,11 +172,15 @@ const PurePreviewMessage = ({
               type === "dynamic-tool" ||
               type.startsWith("tool-")
             ) {
-              return renderToolPart(type, {
-                part,
-                addToolApprovalResponse,
-                isReadonly,
-              });
+              return (
+                <ToolPartRenderer
+                  key={key}
+                  type={type}
+                  part={part}
+                  addToolApprovalResponse={addToolApprovalResponse}
+                  isReadonly={isReadonly}
+                />
+              );
             }
 
             return null;
@@ -162,9 +192,9 @@ const PurePreviewMessage = ({
   );
 };
 
-export const PreviewMessage = PurePreviewMessage;
+export const PreviewMessage = memo(PurePreviewMessage);
 
-export const ThinkingMessage = () => {
+export const ThinkingMessage = memo(() => {
   return (
     <div
       className="group/message w-full"
@@ -184,4 +214,4 @@ export const ThinkingMessage = () => {
       </div>
     </div>
   );
-};
+});

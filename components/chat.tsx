@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import {
@@ -31,6 +31,7 @@ import {
 import { ArrowUpIcon, VoiceWaveIcon } from "./icons";
 import { Messages } from "./messages";
 import { NavPanel } from "./nav-panel";
+import { MODELS } from "@/lib/ai/models";
 import { getChatHistoryPaginationKey } from "@/lib/chat-history-keys";
 import { toast } from "./toast";
 export function Chat({
@@ -41,6 +42,8 @@ export function Chat({
   initialInput = "",
   isFork = false,
   autoSendInitialInput = false,
+  initialHasMore = false,
+  initialHistoryCursor = null,
 }: {
   id: string;
   initialMessages: ChatMessage[];
@@ -49,6 +52,8 @@ export function Chat({
   initialInput?: string;
   isFork?: boolean;
   autoSendInitialInput?: boolean;
+  initialHasMore?: boolean;
+  initialHistoryCursor?: string | null;
 }) {
   const router = useRouter();
 
@@ -77,6 +82,14 @@ export function Chat({
   const { thinkingBudget, maxTokens, selectedModel } = useModel();
   const latestRef = useRef({ thinkingBudget, maxTokens, selectedModel });
   latestRef.current = { thinkingBudget, maxTokens, selectedModel };
+
+  // Set document title to model label when there's no chat title yet
+  useEffect(() => {
+    if (initialMessages.length === 0) {
+      const label = MODELS.find((m) => m.id === selectedModel)?.label ?? selectedModel;
+      document.title = label;
+    }
+  }, [selectedModel, initialMessages.length]);
 
   const {
     messages,
@@ -154,6 +167,31 @@ export function Chat({
       }
     },
   });
+
+  // --- History pagination state ---
+  const [historyCursor, setHistoryCursor] = useState<string | null>(initialHistoryCursor);
+  const [hasMoreHistory, setHasMoreHistory] = useState(initialHasMore);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+
+  const loadOlder = useCallback(() => {
+    if (!hasMoreHistory || isLoadingOlder || !historyCursor) return;
+    setIsLoadingOlder(true);
+
+    fetch(`/api/chat/${id}/messages?before=${historyCursor}&limit=50`)
+      .then((res) => res.json())
+      .then((data: { messages: ChatMessage[]; hasMore: boolean; nextCursor: string | null }) => {
+        startTransition(() => {
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id));
+            const newMessages = data.messages.filter((m) => !existingIds.has(m.id));
+            return [...newMessages, ...prev];
+          });
+          setHistoryCursor(data.nextCursor);
+          setHasMoreHistory(data.hasMore);
+        });
+      })
+      .finally(() => setIsLoadingOlder(false));
+  }, [hasMoreHistory, isLoadingOlder, historyCursor, id, setMessages]);
 
   const searchParams = useSearchParams();
   const query = searchParams.get("query");
@@ -234,9 +272,14 @@ export function Chat({
           <Messages
             addToolApprovalResponse={addToolApprovalResponse}
             chatId={id}
+            hasMoreHistory={hasMoreHistory}
+            isLoadingOlder={isLoadingOlder}
             isReadonly={isReadonly}
-            messages={messages}
+            messages={messages.length > 0 && messages[messages.length - 1].role === "user"
+              ? [...messages, { id: "__placeholder__", role: "assistant", parts: [{ type: "text" as const, text: "" }] } as ChatMessage]
+              : messages}
             onBackgroundTap={focusTextarea}
+            onLoadOlder={loadOlder}
             regenerate={regenerate}
             setMessages={setMessages}
             status={status}
@@ -255,12 +298,13 @@ export function Chat({
                     submitForm();
                   }}
                 >
-                  <div className="flex items-center">
+                  <div className={`flex items-center${status !== "ready" ? " invisible pointer-events-none" : ""}`}>
                     <button type="button" className="flex shrink-0 items-center justify-center text-foreground opacity-0 pointer-events-none">
                       <VoiceWaveIcon size={20} />
                     </button>
                     <PromptInputTextarea
                       autoFocus
+                      disabled={status !== "ready"}
                       className="min-h-0! h-auto! grow resize-none border-0! border-none! bg-transparent pl-2 pr-4 py-3 text-base leading-[1.625rem] tracking-[-0.025rem] text-right outline-none ring-0 text-foreground [-ms-overflow-style:none] [scrollbar-width:none] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-scrollbar]:hidden"
                       data-testid="multimodal-input"
                       disableAutoResize={true}

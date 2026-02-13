@@ -69,10 +69,13 @@ export function useScrollToBottom() {
       return;
     }
 
+    let rafId: number | null = null;
     const scrollIfNeeded = () => {
       // Only auto-scroll if user was at bottom and isn't actively scrolling
       if (isAtBottomRef.current && !isUserScrollingRef.current) {
-        requestAnimationFrame(() => {
+        if (rafId !== null) return; // already scheduled
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
           container.scrollTo({
             top: container.scrollHeight,
             behavior: "instant",
@@ -103,6 +106,7 @@ export function useScrollToBottom() {
     return () => {
       mutationObserver.disconnect();
       resizeObserver.disconnect();
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, []);
 

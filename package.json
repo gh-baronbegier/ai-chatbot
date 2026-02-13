@@ -50,6 +50,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@radix-ui/react-visually-hidden": "^1.2.4",
+    "@tanstack/react-virtual": "^3.13.18",
     "@upstash/redis": "^1.36.2",
     "@vercel/analytics": "^1.6.1",
     "@vercel/blob": "^2.2.0",

@@ -2,7 +2,7 @@
 
 import type React from "react";
 import type { ComponentProps } from "react";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type StreamdownProps = ComponentProps<typeof import("streamdown").Streamdown>;
@@ -28,6 +28,31 @@ function PlainFallback({
   );
 }
 
+function useNearViewport(rootMargin = "800px 0px") {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isNear, setIsNear] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsNear(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [rootMargin]);
+
+  return { ref, isNear };
+}
+
 export function Response({
   className,
   children,
@@ -35,8 +60,6 @@ export function Response({
   ...props
 }: StreamdownProps) {
   const mergedStyle: React.CSSProperties = {
-    contentVisibility: "auto",
-    containIntrinsicSize: "1px 800px",
     ...style,
   };
 
@@ -45,17 +68,27 @@ export function Response({
     className,
   );
 
+  const { ref, isNear } = useNearViewport();
+
   return (
-    <Suspense
-      fallback={
+    <div ref={ref}>
+      {isNear ? (
+        <Suspense
+          fallback={
+            <PlainFallback className={baseClass} style={mergedStyle}>
+              {children}
+            </PlainFallback>
+          }
+        >
+          <LazyStreamdown className={baseClass} style={mergedStyle} {...props}>
+            {children}
+          </LazyStreamdown>
+        </Suspense>
+      ) : (
         <PlainFallback className={baseClass} style={mergedStyle}>
           {children}
         </PlainFallback>
-      }
-    >
-      <LazyStreamdown className={baseClass} style={mergedStyle} {...props}>
-        {children}
-      </LazyStreamdown>
-    </Suspense>
+      )}
+    </div>
   );
 }

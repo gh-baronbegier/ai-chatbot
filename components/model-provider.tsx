@@ -3,8 +3,10 @@
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -39,31 +41,34 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     getAvailableModelIds().then(setAvailableModelIds);
   }, []);
 
-  const setThinkingBudget = (v: number) => {
+  const setThinkingBudget = useCallback((v: number) => {
     _setThinkingBudget(v);
-  };
+  }, []);
 
-  const setMaxTokens = (v: number) => {
+  const setMaxTokens = useCallback((v: number) => {
     _setMaxTokens(v);
-  };
+  }, []);
 
-  const setSelectedModel = (v: string) => {
+  const setSelectedModel = useCallback((v: string) => {
     _setSelectedModel(v);
     localStorage.setItem("selectedModel", v);
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      thinkingBudget,
+      setThinkingBudget,
+      maxTokens,
+      setMaxTokens,
+      selectedModel,
+      setSelectedModel,
+      availableModelIds,
+    }),
+    [thinkingBudget, setThinkingBudget, maxTokens, setMaxTokens, selectedModel, setSelectedModel, availableModelIds],
+  );
 
   return (
-    <ModelContext.Provider
-      value={{
-        thinkingBudget,
-        setThinkingBudget,
-        maxTokens,
-        setMaxTokens,
-        selectedModel,
-        setSelectedModel,
-        availableModelIds,
-      }}
-    >
+    <ModelContext.Provider value={value}>
       {children}
     </ModelContext.Provider>
   );

@@ -234,6 +234,47 @@ export async function updateMessage({
   );
 }
 
+export async function getRecentMessages({
+  chatId,
+  limit,
+}: { chatId: string; limit: number }) {
+  return executeQuery(
+    () =>
+      db
+        .select()
+        .from(message)
+        .where(eq(message.chatId, chatId))
+        .orderBy(desc(message.createdAt))
+        .limit(limit),
+    "Failed to get recent messages"
+  );
+}
+
+export async function getMessagesBefore({
+  chatId,
+  beforeId,
+  limit,
+}: { chatId: string; beforeId: string; limit: number }) {
+  const [cursor] = await db
+    .select({ createdAt: message.createdAt })
+    .from(message)
+    .where(eq(message.id, beforeId))
+    .limit(1);
+  if (!cursor) return [];
+  return executeQuery(
+    () =>
+      db
+        .select()
+        .from(message)
+        .where(
+          and(eq(message.chatId, chatId), lt(message.createdAt, cursor.createdAt))
+        )
+        .orderBy(desc(message.createdAt))
+        .limit(limit),
+    "Failed to get messages before cursor"
+  );
+}
+
 export async function getMessagesByChatId({ id }: { id: string }) {
   return executeQuery(
     () =>
