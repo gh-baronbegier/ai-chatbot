@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAlwaysActiveTextarea } from "@/hooks/use-always-active-textarea";
 import { useAutoResume } from "@/hooks/use-auto-resume";
-import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import { useModel } from "./model-provider";
 import { ChatSDKError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
@@ -34,12 +33,9 @@ import { Messages } from "./messages";
 import { NavPanel } from "./nav-panel";
 import { getChatHistoryPaginationKey } from "@/lib/chat-history-keys";
 import { toast } from "./toast";
-import type { VisibilityType } from "./visibility-selector";
-
 export function Chat({
   id,
   initialMessages,
-  initialVisibilityType,
   isReadonly,
   autoResume,
   initialInput = "",
@@ -48,7 +44,6 @@ export function Chat({
 }: {
   id: string;
   initialMessages: ChatMessage[];
-  initialVisibilityType: VisibilityType;
   isReadonly: boolean;
   autoResume: boolean;
   initialInput?: string;
@@ -56,11 +51,6 @@ export function Chat({
   autoSendInitialInput?: boolean;
 }) {
   const router = useRouter();
-
-  const { visibilityType } = useChatVisibility({
-    chatId: id,
-    initialVisibilityType,
-  });
 
   const { mutate } = useSWRConfig();
 
@@ -136,7 +126,6 @@ export function Chat({
               ? { messages: request.messages }
               : { message: lastMessage }),
             selectedChatModel: latestRef.current.selectedModel,
-            selectedVisibilityType: visibilityType,
             thinkingBudget: latestRef.current.thinkingBudget,
             maxTokens: latestRef.current.maxTokens,
             ...request.body,
@@ -238,60 +227,55 @@ export function Chat({
   return (
     <>
       <div className="overscroll-behavior-contain flex h-dvh w-full min-w-0 touch-pan-y flex-col bg-background">
-        <Messages
-          addToolApprovalResponse={addToolApprovalResponse}
-          chatId={id}
-          isReadonly={isReadonly}
-          messages={messages}
-          onBackgroundTap={focusTextarea}
-          regenerate={regenerate}
-          setMessages={setMessages}
-          status={status}
-          inputSlot={
-              <PromptInput
-                className="rounded-none border-none bg-transparent px-0 py-0 shadow-none flex flex-col justify-center"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (isReadonly) {
-                    if (!input.trim()) return;
-                    window.open(`/?fork=${id}&msg=${encodeURIComponent(input.trim())}`, "_blank");
-                    setInput("");
-                    return;
-                  }
-                  if (status !== "ready") return;
-                  submitForm();
-                }}
-              >
-                <div className="flex items-center">
-                  <button type="button" className="flex shrink-0 items-center justify-center text-foreground opacity-0 pointer-events-none">
-                    <VoiceWaveIcon size={20} />
-                  </button>
-                  <PromptInputTextarea
-                    autoFocus
-                    className="min-h-0! h-auto! grow resize-none border-0! border-none! bg-transparent pl-2 pr-4 py-3 text-base leading-[1.625rem] tracking-[-0.025rem] text-right outline-none ring-0 text-foreground [-ms-overflow-style:none] [scrollbar-width:none] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-scrollbar]:hidden"
-                    data-testid="multimodal-input"
-                    disableAutoResize={true}
-                    maxHeight={200}
-                    minHeight={0}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="ask anything"
-                    ref={textareaRef}
-                    rows={1}
-                    value={input}
-                  />
-                </div>
-              </PromptInput>
-          }
-        />
-
-        <div
-          className="fixed inset-x-0 top-[36px] bottom-[36px] z-10 mx-auto flex flex-col px-[0.375rem]"
-          style={{
-            visibility: isNavPanelOpen ? "visible" : "hidden",
-            pointerEvents: isNavPanelOpen ? "auto" : "none",
-          }}
-        >
+        <div className={`flex flex-1 flex-col min-h-0 pt-[36px] pb-[36px] px-[0.375rem] ${isNavPanelOpen ? "" : "hidden"}`}>
           <NavPanel isOpen={isNavPanelOpen} onClose={closeNavPanel} />
+        </div>
+        <div className={isNavPanelOpen ? "hidden" : "contents"}>
+          <Messages
+            addToolApprovalResponse={addToolApprovalResponse}
+            chatId={id}
+            isReadonly={isReadonly}
+            messages={messages}
+            onBackgroundTap={focusTextarea}
+            regenerate={regenerate}
+            setMessages={setMessages}
+            status={status}
+            inputSlot={
+                <PromptInput
+                  className="rounded-none border-none bg-transparent px-0 py-0 shadow-none flex flex-col justify-center"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (isReadonly) {
+                      if (!input.trim()) return;
+                      window.open(`/?fork=${id}&msg=${encodeURIComponent(input.trim())}`, "_blank");
+                      setInput("");
+                      return;
+                    }
+                    if (status !== "ready") return;
+                    submitForm();
+                  }}
+                >
+                  <div className="flex items-center">
+                    <button type="button" className="flex shrink-0 items-center justify-center text-foreground opacity-0 pointer-events-none">
+                      <VoiceWaveIcon size={20} />
+                    </button>
+                    <PromptInputTextarea
+                      autoFocus
+                      className="min-h-0! h-auto! grow resize-none border-0! border-none! bg-transparent pl-2 pr-4 py-3 text-base leading-[1.625rem] tracking-[-0.025rem] text-right outline-none ring-0 text-foreground [-ms-overflow-style:none] [scrollbar-width:none] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-scrollbar]:hidden"
+                      data-testid="multimodal-input"
+                      disableAutoResize={true}
+                      maxHeight={200}
+                      minHeight={0}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="ask anything"
+                      ref={textareaRef}
+                      rows={1}
+                      value={input}
+                    />
+                  </div>
+                </PromptInput>
+            }
+          />
         </div>
       </div>
 

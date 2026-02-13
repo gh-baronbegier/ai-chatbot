@@ -1,19 +1,9 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
-import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef } from "react";
 import { useMessages } from "@/hooks/use-messages";
 import type { ChatMessage } from "@/lib/types";
 import { useDataStream } from "./data-stream-provider";
-
-const PreviewMessage = dynamic(
-  () => import("./message").then((m) => ({ default: m.PreviewMessage })),
-  { ssr: false },
-);
-
-const ThinkingMessage = dynamic(
-  () => import("./message").then((m) => ({ default: m.ThinkingMessage })),
-  { ssr: false },
-);
+import { PreviewMessage, ThinkingMessage } from "./message";
 
 const INTERACTIVE_SELECTOR =
   'a, button, input, textarea, select, [role="button"], [contenteditable="true"], pre, img, video, [data-interactive]';

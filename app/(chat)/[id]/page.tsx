@@ -52,12 +52,6 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
     redirect("/");
   }
 
-  if (chat.visibility === "private") {
-    if (!session?.user?.id || session.user.id !== chat.userId) {
-      redirect("/");
-    }
-  }
-
   const messagesFromDb = await getMessagesByChatId({ id });
   const uiMessages = convertToUIMessages(messagesFromDb);
 
@@ -65,7 +59,6 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
     <ChatPageClient
       id={chat.id}
       initialMessages={uiMessages}
-      initialVisibilityType={chat.visibility}
       isReadonly={session?.user?.id !== chat.userId}
     />
   );

@@ -28,9 +28,6 @@ export const chat = pgTable(
     userId: uuid("userId")
       .notNull()
       .references(() => user.id),
-    visibility: varchar("visibility", { enum: ["public", "private"] })
-      .notNull()
-      .default("private"),
   },
   (table) => ({
     idx_chat_userId: index("idx_chat_userId").on(table.userId),

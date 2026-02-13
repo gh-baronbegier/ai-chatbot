@@ -13,7 +13,6 @@ import {
 } from "drizzle-orm";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import type { VisibilityType } from "@/components/visibility-selector";
 import { ChatSDKError } from "../errors";
 import { generateUUID } from "../utils";
 import {
@@ -79,12 +78,10 @@ export async function saveChat({
   id,
   userId,
   title,
-  visibility,
 }: {
   id: string;
   userId: string;
   title: string;
-  visibility: VisibilityType;
 }) {
   return executeQuery(
     () =>
@@ -93,7 +90,6 @@ export async function saveChat({
         createdAt: new Date(),
         userId,
         title,
-        visibility,
       }),
     "Failed to save chat"
   );
@@ -284,19 +280,6 @@ export async function deleteMessagesByChatIdAfterTimestamp({
         );
     }
   }, "Failed to delete messages by chat id after timestamp");
-}
-
-export async function updateChatVisibilityById({
-  chatId,
-  visibility,
-}: {
-  chatId: string;
-  visibility: "private" | "public";
-}) {
-  return executeQuery(
-    () => db.update(chat).set({ visibility }).where(eq(chat.id, chatId)),
-    "Failed to update chat visibility by id"
-  );
 }
 
 export async function updateChatTitleById({

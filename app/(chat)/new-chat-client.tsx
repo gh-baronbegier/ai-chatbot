@@ -85,7 +85,6 @@ export function NewChatClient() {
         autoResume={false}
         id={id}
         initialMessages={effective.initialMessages}
-        initialVisibilityType="private"
         isReadonly={false}
         key={id}
         initialInput={effective.initialInput}
