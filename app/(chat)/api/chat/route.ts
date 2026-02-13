@@ -13,7 +13,7 @@ import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { auth } from "@/app/(auth)/auth";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
-import { getFallbackModel, getLanguageModel } from "@/lib/ai/providers";
+import { getLanguageModel } from "@/lib/ai/providers";
 import { getBaronLocation } from "@/lib/ai/tools/get-baron-location";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { queryWolframAlpha } from "@/lib/ai/tools/wolfram-alpha";
@@ -87,25 +87,61 @@ function clampThinkingBudget(
 function buildToolConfig(
   isReasoningModel: boolean,
   mcpToolNames: string[],
-  mcpTools: Record<string, any>
+  mcpTools: Record<string, any>,
+  isGroqModel: boolean
 ) {
-  const activeTools = isReasoningModel
-    ? []
-    : [
-        "getWeather",
-        "getBaronLocation",
-        "queryWolframAlpha",
-        "executeCode",
-        ...mcpToolNames,
-      ];
+  // Groq has a hard limit of 128 tools
+  const MAX_GROQ_TOOLS = 128;
 
-  const tools = {
-    getWeather,
-    getBaronLocation,
-    queryWolframAlpha,
-    executeCode,
-    ...mcpTools,
-  };
+  let activeTools: string[];
+  let tools: Record<string, any>;
+
+  if (isReasoningModel) {
+    activeTools = [];
+    tools = {};
+  } else if (isGroqModel) {
+    // For Groq, use built-in tools + Neon, Linear, and GitHub MCP tools only
+    const allowedMcpPrefixes = ["neon_", "linear_", "github_"];
+    const filteredMcpToolNames = mcpToolNames.filter((name) =>
+      allowedMcpPrefixes.some((prefix) => name.startsWith(prefix))
+    );
+    const filteredMcpTools = Object.fromEntries(
+      Object.entries(mcpTools).filter(([name]) =>
+        allowedMcpPrefixes.some((prefix) => name.startsWith(prefix))
+      )
+    );
+
+    activeTools = [
+      "getWeather",
+      "getBaronLocation",
+      "queryWolframAlpha",
+      "executeCode",
+      ...filteredMcpToolNames,
+    ];
+    tools = {
+      getWeather,
+      getBaronLocation,
+      queryWolframAlpha,
+      executeCode,
+      ...filteredMcpTools,
+    };
+  } else {
+    // For other providers, use all tools
+    activeTools = [
+      "getWeather",
+      "getBaronLocation",
+      "queryWolframAlpha",
+      "executeCode",
+      ...mcpToolNames,
+    ];
+    tools = {
+      getWeather,
+      getBaronLocation,
+      queryWolframAlpha,
+      executeCode,
+      ...mcpTools,
+    };
+  }
 
   return { activeTools, tools };
 }
@@ -137,7 +173,6 @@ export async function POST(request: Request) {
       message,
       messages,
       selectedChatModel,
-      selectedVisibilityType,
       thinkingBudget: clientBudget,
       maxTokens: clientMaxTokens,
     } = requestBody;
@@ -160,7 +195,6 @@ export async function POST(request: Request) {
         id,
         userId: userId,
         title: "New chat",
-        visibility: selectedVisibilityType,
       });
       titlePromise = generateTitleFromUserMessage({ message });
     }
@@ -201,11 +235,19 @@ export async function POST(request: Request) {
       selectedChatModel.startsWith("claude-max-direct/");
     const isOpenAICodexModel =
       selectedChatModel.startsWith("openai-codex-direct/");
+    const isGroqModel = selectedChatModel.startsWith("groq/");
+    const isXaiModel = selectedChatModel.startsWith("xai/");
+    const isGoogleModel = selectedChatModel.startsWith("google/");
 
     const resolvedBudget = resolveThinkingBudget(selectedChatModel, clientBudget);
     const enableThinking = isReasoningModel || resolvedBudget !== null;
-    const maxTokens = resolveMaxTokens(resolvedBudget, enableThinking, clientMaxTokens);
+    let maxTokens = resolveMaxTokens(resolvedBudget, enableThinking, clientMaxTokens);
     const thinkingBudget = clampThinkingBudget(resolvedBudget, maxTokens);
+
+    if (isGroqModel) {
+      const { GROQ_MAX_COMPLETION_TOKENS } = await import("@/lib/ai/models");
+      maxTokens = GROQ_MAX_COMPLETION_TOKENS[selectedChatModel] ?? 8_192;
+    }
 
     const modelMessages = await convertToModelMessages(uiMessages);
 
@@ -216,7 +258,8 @@ export async function POST(request: Request) {
         const { activeTools, tools } = buildToolConfig(
           isReasoningModel,
           mcp.toolNames,
-          mcp.tools
+          mcp.tools,
+          isGroqModel
         );
 
         const sharedStreamOpts = {
@@ -251,47 +294,25 @@ export async function POST(request: Request) {
                     reasoningEffort: openaiReasoningEffort,
                   },
                 }
-              : undefined;
+              : isGoogleModel
+                ? {
+                    google: {
+                      thinkingConfig: {
+                        thinkingBudget: thinkingBudget ?? 8_192,
+                        includeThoughts: true,
+                      },
+                    },
+                  }
+                : undefined;
 
-        const writeModelSelection = (resolvedModel: string, fallback: boolean) => {
-          dataStream.write({
-            type: "data-chat-model",
-            data: {
-              requested: selectedChatModel,
-              resolved: resolvedModel,
-              fallback,
-            },
-            transient: true,
-          });
-        };
+        const result = streamText({
+          model: getLanguageModel(selectedChatModel),
+          maxOutputTokens: maxTokens,
+          providerOptions,
+          ...sharedStreamOpts,
+        });
 
-        try {
-          const result = streamText({
-            model: getLanguageModel(selectedChatModel),
-            maxOutputTokens: maxTokens,
-            providerOptions,
-            ...sharedStreamOpts,
-          });
-
-          dataStream.merge(result.toUIMessageStream({ sendReasoning: true }));
-
-          // Force await to catch stream-level errors early
-          const res = await result.response;
-          writeModelSelection(res.modelId, false);
-        } catch (primaryError) {
-          console.warn("[chat] Primary model failed, falling back to Groq:", primaryError);
-
-          const fallbackResult = streamText({
-            model: getFallbackModel(),
-            maxOutputTokens: Math.min(maxTokens, 65_536),
-            ...sharedStreamOpts,
-          });
-
-          dataStream.merge(fallbackResult.toUIMessageStream({ sendReasoning: true }));
-
-          const fallbackRes = await fallbackResult.response;
-          writeModelSelection(fallbackRes.modelId, true);
-        }
+        dataStream.merge(result.toUIMessageStream({ sendReasoning: true }));
 
         if (titlePromise) {
           const title = await titlePromise;

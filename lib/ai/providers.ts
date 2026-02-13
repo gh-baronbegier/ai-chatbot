@@ -1,5 +1,7 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createXai } from "@ai-sdk/xai";
 import { customProvider } from "ai";
 import { isTestEnvironment } from "../constants";
 import { getMaxAccessToken } from "./max-oauth";
@@ -9,6 +11,9 @@ const groq = createOpenAI({
   apiKey: process.env.GROQ_API_KEY,
   baseURL: "https://api.groq.com/openai/v1",
 });
+
+const xai = createXai();
+const google = createGoogleGenerativeAI();
 
 const CLAUDE_MAX_BETA_FLAGS =
   "oauth-2025-04-20,claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14";
@@ -384,6 +389,21 @@ export function getLanguageModel(modelId: string) {
     return myProvider.languageModel(modelId);
   }
 
+  if (modelId.startsWith("groq/")) {
+    const groqModelId = modelId.replace(/^groq\//, "");
+    return groq.chat(groqModelId);
+  }
+
+  if (modelId.startsWith("xai/")) {
+    const xaiModelId = modelId.replace(/^xai\//, "");
+    return xai(xaiModelId);
+  }
+
+  if (modelId.startsWith("google/")) {
+    const googleModelId = modelId.replace(/^google\//, "");
+    return google(googleModelId);
+  }
+
   if (modelId.startsWith("openai-codex-direct/")) {
     const codexModelId = modelId
       .replace(/^openai-codex-direct\//, "")
@@ -413,6 +433,3 @@ export function getArtifactModel() {
   return getLanguageModel("claude-max-direct/claude-haiku-4-5");
 }
 
-export function getFallbackModel() {
-  return groq.languageModel("openai/gpt-oss-120b");
-}

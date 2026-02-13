@@ -11,6 +11,9 @@ importers:
       '@ai-sdk/anthropic':
         specifier: ^3.0.41
         version: 3.0.43(zod@4.3.6)
+      '@ai-sdk/google':
+        specifier: ^3.0.29
+        version: 3.0.29(zod@4.3.6)
       '@ai-sdk/mcp':
         specifier: ^1.0.19
         version: 1.0.21(zod@4.3.6)
@@ -23,6 +26,9 @@ importers:
       '@ai-sdk/react':
         specifier: 3.0.80
         version: 3.0.80(react@19.2.4)(zod@4.3.6)
+      '@ai-sdk/xai':
+        specifier: ^3.0.56
+        version: 3.0.56(zod@4.3.6)
       '@e2b/code-interpreter':
         specifier: ^2.3.3
         version: 2.3.3
@@ -41,6 +47,9 @@ importers:
       '@mui/x-data-grid-premium':
         specifier: ^8.27.0
         version: 8.27.0(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.4))(@types/react@19.2.14)(react@19.2.4))(@mui/material@7.3.8(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.4))(@types/react@19.2.14)(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@mui/system@7.3.8(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.4))(@types/react@19.2.14)(react@19.2.4))(@types/react@19.2.14)(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@ncdai/react-wheel-picker':
+        specifier: ^1.2.0
+        version: 1.2.0(react@19.2.4)
       '@neondatabase/serverless':
         specifier: ^1.0.2
         version: 1.0.2
@@ -80,6 +89,9 @@ importers:
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.2.4(@types/react@19.2.14)(react@19.2.4)
+      '@radix-ui/react-tabs':
+        specifier: ^1.1.13
+        version: 1.1.13(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -167,6 +179,9 @@ importers:
       react-dom:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
+      react-mobile-picker:
+        specifier: ^1.2.0
+        version: 1.2.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react-resizable-panels:
         specifier: ^4.6.2
         version: 4.6.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -270,8 +285,20 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/google@3.0.29':
+    resolution: {integrity: sha512-x0hcU10AA+i1ZUQHloGD5qXWsB+Y8qnxlmFUef6Ly4rB53MGVbQExkI9nOKiCO3mu2TGiiNoQMeKWSeQVLfRUA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/mcp@1.0.21':
     resolution: {integrity: sha512-dRX2X6GDadZNpiylNnw0HP7zJC8ggVOOJV/JtxuF6CgtP8CKnc7a/wEzpUw1m/4AGdD3mTDhKnKFwC4y10a8FQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/openai-compatible@2.0.30':
+    resolution: {integrity: sha512-iTjumHf1/u4NhjXYFn/aONM2GId3/o7J1Lp5ql8FCbgIMyRwrmanR5xy1S3aaVkfTscuDvLTzWiy1mAbGzK3nQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -303,6 +330,12 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       react: ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
+
+  '@ai-sdk/xai@3.0.56':
+    resolution: {integrity: sha512-EbceQ0YkrAi0y4TRxFkgNgc/y8KhJhf+Gtxvmn7+hoV7OETP/q9Q3pgZLcLkLAHptM4hlliOMYpZux/9ADuY2Q==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -1424,6 +1457,11 @@ packages:
     peerDependencies:
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@ncdai/react-wheel-picker@1.2.0':
+    resolution: {integrity: sha512-Qe+5fuZD6G2rx1FGPvvxtY/8gee0VJgycvbdvTkgwEl9LnGU4Xyo7h3b5elC5oNDQjjniXVlr2Bi0joqTKLxyA==}
+    peerDependencies:
+      react: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
 
   '@neondatabase/serverless@1.0.2':
     resolution: {integrity: sha512-I5sbpSIAHiB+b6UttofhrN/UJXII+4tZPAq1qugzwCwLIL8EZLV7F/JyHUrEIiGgQpEXzpnjlJ+zwcEhheGvCw==}
@@ -3951,6 +3989,12 @@ packages:
   react-is@19.2.4:
     resolution: {integrity: sha512-W+EWGn2v0ApPKgKKCy/7s7WHXkboGcsrXE+2joLyVxkbyVQfO3MUEaUQDHoSmb8TFFrSKYa9mw64WZHNHSDzYA==}
 
+  react-mobile-picker@1.2.0:
+    resolution: {integrity: sha512-utIgq/rqJfDw+qL3CA6j5e3JqlAoc1kHucJi2vNiwspjaa1XJurJN/FKWBSgui1wV0gzS0BYutd2CbwcyR2eDA==}
+    peerDependencies:
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+
   react-remove-scroll-bar@2.3.8:
     resolution: {integrity: sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==}
     engines: {node: '>=10'}
@@ -4461,11 +4505,23 @@ snapshots:
       '@vercel/oidc': 3.1.0
       zod: 4.3.6
 
+  '@ai-sdk/google@3.0.29(zod@4.3.6)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.8
+      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
+      zod: 4.3.6
+
   '@ai-sdk/mcp@1.0.21(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
       pkce-challenge: 5.0.1
+      zod: 4.3.6
+
+  '@ai-sdk/openai-compatible@2.0.30(zod@4.3.6)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.8
+      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
       zod: 4.3.6
 
   '@ai-sdk/openai@3.0.28(zod@4.3.6)':
@@ -4501,6 +4557,13 @@ snapshots:
       throttleit: 2.1.0
     transitivePeerDependencies:
       - zod
+
+  '@ai-sdk/xai@3.0.56(zod@4.3.6)':
+    dependencies:
+      '@ai-sdk/openai-compatible': 2.0.30(zod@4.3.6)
+      '@ai-sdk/provider': 3.0.8
+      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
+      zod: 4.3.6
 
   '@alloc/quick-lru@5.2.0': {}
 
@@ -5394,6 +5457,10 @@ snapshots:
       react-dom: 19.2.4(react@19.2.4)
     transitivePeerDependencies:
       - '@types/react'
+
+  '@ncdai/react-wheel-picker@1.2.0(react@19.2.4)':
+    dependencies:
+      react: 19.2.4
 
   '@neondatabase/serverless@1.0.2':
     dependencies:
@@ -8085,6 +8152,11 @@ snapshots:
   react-is@16.13.1: {}
 
   react-is@19.2.4: {}
+
+  react-mobile-picker@1.2.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
 
   react-remove-scroll-bar@2.3.8(@types/react@19.2.14)(react@19.2.4):
     dependencies:

@@ -32,50 +32,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         role="button"
         tabIndex={0}
       >
-        <svg id="topbar-menu" width="24" height="24" viewBox="0 0 18 18">
+        <svg id="topbar-menu" width="24" height="24" viewBox="0 0 18 18" style={{ color: "currentColor" }} className="text-black dark:text-white">
           <polyline
             fill="none"
-            stroke="black"
+            stroke="currentColor"
             strokeWidth="1.2"
             strokeLinecap="round"
             strokeLinejoin="round"
             points="2 12, 16 12"
-            className="stroke-black dark:stroke-white"
           />
           <polyline
             fill="none"
-            stroke="black"
+            stroke="currentColor"
             strokeWidth="1.2"
             strokeLinecap="round"
             strokeLinejoin="round"
             points="2 5, 16 5"
-            className="stroke-black dark:stroke-white"
-          />
-        </svg>
-        <svg
-          id="topbar-close"
-          width="24"
-          height="24"
-          viewBox="0 0 18 18"
-          style={{ display: "none" }}
-        >
-          <polyline
-            fill="none"
-            stroke="black"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            points="3.5 15, 15 3.5"
-            className="stroke-black dark:stroke-white"
-          />
-          <polyline
-            fill="none"
-            stroke="black"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            points="3.5 3.5, 15 15"
-            className="stroke-black dark:stroke-white"
           />
         </svg>
       </div>
