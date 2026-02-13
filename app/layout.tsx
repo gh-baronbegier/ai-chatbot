@@ -49,7 +49,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: "Required for theme init before paint"
@@ -93,11 +93,7 @@ export default function RootLayout({
               href="https://baronbegier.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                fontSize: "16px",
-                color: "inherit",
-                textDecoration: "none",
-              }}
+              style={{ fontSize: "16px", color: "inherit", textDecoration: "none" }}
             >
               baronbegier.com
             </a>

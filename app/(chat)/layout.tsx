@@ -1,6 +1,5 @@
 import { DataStreamProvider } from "@/components/data-stream-provider";
 import { EnsureSession } from "@/components/ensure-session";
-import { LazyToaster } from "@/components/lazy-toaster";
 import { ModelProvider } from "@/components/model-provider";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -9,7 +8,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <ModelProvider>
         {children}
         <EnsureSession />
-        <LazyToaster />
       </ModelProvider>
 
       <div
@@ -32,7 +30,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         role="button"
         tabIndex={0}
       >
-        <svg id="topbar-menu" width="24" height="24" viewBox="0 0 18 18" style={{ color: "currentColor" }} className="text-black dark:text-white">
+        <svg id="topbar-menu" width="24" height="24" viewBox="0 0 18 18" className="text-black dark:text-white">
           <polyline
             fill="none"
             stroke="currentColor"

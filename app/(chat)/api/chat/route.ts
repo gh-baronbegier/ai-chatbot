@@ -36,6 +36,7 @@ import { ChatSDKError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
 
+import { generateTitleFromUserMessage } from "@/app/(chat)/actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
 export const maxDuration = 800;
@@ -198,7 +199,7 @@ export async function POST(request: Request) {
         userId: userId,
         title: modelLabel,
       });
-      titlePromise = Promise.resolve(modelLabel);
+      titlePromise = generateTitleFromUserMessage({ message });
     }
 
     const uiMessages = isToolApprovalFlow

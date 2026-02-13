@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { connection } from "next/server";
+import { Suspense } from "react";
 
-import { getChatById } from "@/lib/db/queries";
-import { ChatPageClient } from "./chat-page-client";
+import { ChatSkeleton } from "../chat-skeleton";
+import { getInitialChatData } from "./chat-data";
+import { ChatPageRSC } from "./chat-page-rsc";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  await connection();
   const { id } = await params;
   try {
-    const chat = await getChatById({ id });
-    const title = chat?.title ?? "Agent";
+    const data = await getInitialChatData(id);
+    const title = data.chat?.title ?? "Agent";
     return {
       title,
       openGraph: {
@@ -28,9 +28,12 @@ export async function generateMetadata({
   }
 }
 
-export default async function Page({
+export default function Page({
   params,
 }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  return <ChatPageClient id={id} />;
+  return (
+    <Suspense fallback={<ChatSkeleton />}>
+      <ChatPageRSC params={params} />
+    </Suspense>
+  );
 }

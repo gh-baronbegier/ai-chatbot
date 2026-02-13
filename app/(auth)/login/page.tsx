@@ -7,7 +7,6 @@ import { useActionState, useEffect, useState } from "react";
 
 import { AuthForm } from "@/components/auth-form";
 import { SubmitButton } from "@/components/submit-button";
-import { toast } from "@/components/toast";
 import { type LoginActionState, login } from "../actions";
 
 export default function Page() {
@@ -28,17 +27,7 @@ export default function Page() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
-    if (state.status === "failed") {
-      toast({
-        type: "error",
-        description: "Invalid credentials!",
-      });
-    } else if (state.status === "invalid_data") {
-      toast({
-        type: "error",
-        description: "Failed validating your submission!",
-      });
-    } else if (state.status === "success") {
+    if (state.status === "success") {
       setIsSuccessful(true);
       updateSession();
       router.refresh();

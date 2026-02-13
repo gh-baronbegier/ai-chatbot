@@ -150,8 +150,6 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro", "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
 
-  --breakpoint-toast-mobile: 600px;
-
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -345,5 +343,11 @@
 #bottom-bar:hover,
 #bottom-bar:hover #bb-text,
 #bottom-bar:hover #bb-chevron {
+  color: rgb(0, 110, 219) !important;
+}
+
+/* Top bar (hamburger) link */
+#sidebar-top-bar:hover,
+#sidebar-top-bar:hover #topbar-menu {
   color: rgb(0, 110, 219) !important;
 }

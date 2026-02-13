@@ -1,5 +1,5 @@
 import { auth } from "@/app/(auth)/auth";
-import { getChatById, getRecentMessages, getMessagesBefore } from "@/lib/db/queries";
+import { getChatMessagesPageFast } from "@/lib/db/fast-chat-queries";
 import { convertToUIMessages } from "@/lib/utils";
 
 export async function GET(
@@ -8,12 +8,6 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const [chat, session] = await Promise.all([getChatById({ id }), auth()]);
-
-  if (!chat) {
-    return Response.json({ error: "Chat not found" }, { status: 404 });
-  }
-
   const url = new URL(request.url);
   const before = url.searchParams.get("before");
   const limit = Math.min(
@@ -21,27 +15,33 @@ export async function GET(
     100,
   );
 
-  let dbMessages;
+  const [data, session] = await Promise.all([
+    getChatMessagesPageFast({ chatId: id, limit, beforeId: before ?? undefined }),
+    auth(),
+  ]);
 
-  if (before) {
-    dbMessages = await getMessagesBefore({ chatId: id, beforeId: before, limit });
-  } else {
-    dbMessages = await getRecentMessages({ chatId: id, limit });
+  if (!data.chat) {
+    return Response.json({ error: "Chat not found" }, { status: 404 });
   }
 
   // DB returns DESC — reverse to chronological
-  dbMessages.reverse();
-
+  const dbMessages = [...data.messages].reverse();
   const uiMessages = convertToUIMessages(dbMessages);
-  const hasMore = dbMessages.length === limit;
-  const nextCursor = hasMore && uiMessages.length > 0 ? uiMessages[0].id : null;
 
-  const isReadonly = session?.user?.id !== chat.userId;
+  const isReadonly = session?.user?.id !== data.chat.userId;
 
-  return Response.json({
-    messages: uiMessages,
-    hasMore,
-    nextCursor,
-    isReadonly,
-  });
+  return Response.json(
+    {
+      messages: uiMessages,
+      hasMore: data.hasMore,
+      nextCursor: data.hasMore && uiMessages.length > 0 ? uiMessages[0].id : null,
+      isReadonly,
+    },
+    {
+      headers: {
+        "Cache-Control": "private, no-store",
+        Vary: "Cookie",
+      },
+    },
+  );
 }

@@ -15,6 +15,7 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { ChatSDKError } from "../errors";
 import { generateUUID } from "../utils";
+import { invalidateChatCache } from "./chat-cache";
 import {
   type Chat,
   chat,
@@ -103,7 +104,7 @@ async function deleteChatCascade(chatIds: string[]) {
 }
 
 export async function deleteChatById({ id }: { id: string }) {
-  return executeQuery(async () => {
+  const result = await executeQuery(async () => {
     await deleteChatCascade([id]);
     const [chatsDeleted] = await db
       .delete(chat)
@@ -111,6 +112,8 @@ export async function deleteChatById({ id }: { id: string }) {
       .returning();
     return chatsDeleted;
   }, "Failed to delete chat by id");
+  invalidateChatCache(id);
+  return result;
 }
 
 export async function deleteAllChatsByUserId({ userId }: { userId: string }) {
@@ -215,10 +218,15 @@ export async function getChatById({ id }: { id: string }) {
 }
 
 export async function saveMessages({ messages }: { messages: DBMessage[] }) {
-  return executeQuery(
+  const result = await executeQuery(
     () => db.insert(message).values(messages),
     "Failed to save messages"
   );
+  const chatIds = new Set(messages.map((m) => m.chatId));
+  for (const chatId of chatIds) {
+    invalidateChatCache(chatId);
+  }
+  return result;
 }
 
 export async function updateMessage({
@@ -228,10 +236,19 @@ export async function updateMessage({
   id: string;
   parts: DBMessage["parts"];
 }) {
-  return executeQuery(
-    () => db.update(message).set({ parts }).where(eq(message.id, id)),
+  const result = await executeQuery(
+    () =>
+      db
+        .update(message)
+        .set({ parts })
+        .where(eq(message.id, id))
+        .returning({ chatId: message.chatId }),
     "Failed to update message"
   );
+  if (result.length > 0) {
+    invalidateChatCache(result[0].chatId);
+  }
+  return result;
 }
 
 export async function getRecentMessages({
@@ -301,7 +318,7 @@ export async function deleteMessagesByChatIdAfterTimestamp({
   chatId: string;
   timestamp: Date;
 }) {
-  return executeQuery(async () => {
+  const result = await executeQuery(async () => {
     const messagesToDelete = await db
       .select({ id: message.id })
       .from(message)
@@ -321,6 +338,8 @@ export async function deleteMessagesByChatIdAfterTimestamp({
         );
     }
   }, "Failed to delete messages by chat id after timestamp");
+  invalidateChatCache(chatId);
+  return result;
 }
 
 export async function updateChatTitleById({

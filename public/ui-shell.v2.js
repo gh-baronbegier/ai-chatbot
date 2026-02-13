@@ -54,33 +54,20 @@
     var chevron = document.getElementById("bb-chevron");
     if (!bar || !text || !chevron) return;
 
-    var lastPath = "";
     var scheduled = false;
 
     function updateHref() {
-      lastPath = location.pathname;
       var id = location.pathname.replace(/^\//, "");
       text.href = id
         ? "https://baronbegier.com?c=" + encodeURIComponent(id)
         : "https://baronbegier.com";
     }
 
-    function update() {
-      var navOpen = document.documentElement.dataset.navPanelOpen === "true";
-      text.style.color = "inherit";
-      text.style.cursor = "";
-      bar.style.cursor = "pointer";
-      text.textContent = "baronbegier.com";
-      text.target = "_blank";
-      bar.style.display = "flex";
-      if (navOpen) {
-        chevron.style.display = "none";
-      }
+    function updateVisibility() {
       var scrolledUp =
         document.documentElement.dataset.chatAtBottom === "false";
       text.style.display = scrolledUp ? "none" : "";
       chevron.style.display = scrolledUp ? "" : "none";
-      updateHref();
     }
 
     function scheduleUpdate() {
@@ -88,12 +75,13 @@
       scheduled = true;
       requestAnimationFrame(function () {
         scheduled = false;
-        update();
+        updateHref();
+        updateVisibility();
       });
     }
 
     updateHref();
-    update();
+    updateVisibility();
 
     bar.addEventListener("click", function (e) {
       if (document.documentElement.dataset.chatAtBottom === "false") {

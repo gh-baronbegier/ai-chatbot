@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast as sonnerToast } from "sonner";
 import useSWR from "swr";
 import { DEFAULT_CHAT_MODEL, MODELS, OPENAI_CODEX_CHAT_MODEL } from "@/lib/ai/models";
 import { fetcher } from "@/lib/utils";
@@ -159,34 +158,24 @@ export default function NavPanelContent({
 
     setShowDeleteDialog(false);
 
-    const deletePromise = fetch(`/api/chat?id=${chatToDelete}`, {
-      method: "DELETE",
-    });
+    fetch(`/api/chat?id=${chatToDelete}`, { method: "DELETE" }).then(() => {
+      mutate(
+        (current) =>
+          current
+            ? {
+                ...current,
+                chats: current.chats.filter(
+                  (chat) => chat.id !== chatToDelete
+                ),
+              }
+            : current,
+        { revalidate: false }
+      );
 
-    sonnerToast.promise(deletePromise, {
-      loading: "Deleting chat...",
-      success: () => {
-        mutate(
-          (current) =>
-            current
-              ? {
-                  ...current,
-                  chats: current.chats.filter(
-                    (chat) => chat.id !== chatToDelete
-                  ),
-                }
-              : current,
-          { revalidate: false }
-        );
-
-        if (isCurrentChat) {
-          router.replace("/");
-          router.refresh();
-        }
-
-        return "Chat deleted successfully";
-      },
-      error: "Failed to delete chat",
+      if (isCurrentChat) {
+        router.replace("/");
+        router.refresh();
+      }
     });
   };
 
@@ -194,20 +183,11 @@ export default function NavPanelContent({
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
 
   const handleDeleteAll = () => {
-    const deletePromise = fetch("/api/history", {
-      method: "DELETE",
-    });
-
-    sonnerToast.promise(deletePromise, {
-      loading: "Deleting all chats...",
-      success: () => {
-        mutate({ chats: [], hasMore: false }, { revalidate: false });
-        setShowDeleteAllDialog(false);
-        router.replace("/");
-        router.refresh();
-        return "All chats deleted successfully";
-      },
-      error: "Failed to delete all chats",
+    fetch("/api/history", { method: "DELETE" }).then(() => {
+      mutate({ chats: [], hasMore: false }, { revalidate: false });
+      setShowDeleteAllDialog(false);
+      router.replace("/");
+      router.refresh();
     });
   };
 

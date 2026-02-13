@@ -1,68 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import type { ChatMessage } from "@/lib/types";
 import { Chat } from "@/components/chat";
-import { DataStreamHandler } from "@/components/data-stream-handler";
-import { ChatSkeleton } from "../chat-skeleton";
 
-type FetchState = {
-  messages: ChatMessage[];
+const DataStreamHandler = dynamic(
+  () =>
+    import("@/components/data-stream-handler").then(
+      (mod) => mod.DataStreamHandler,
+    ),
+  { ssr: false },
+);
+
+export function ChatPageClient({
+  id,
+  initialMessages,
+  isReadonly,
+  initialHasMore,
+  initialHistoryCursor,
+}: {
+  id: string;
+  initialMessages: ChatMessage[];
   isReadonly: boolean;
-  hasMore: boolean;
-  nextCursor: string | null;
-};
-
-export function ChatPageClient({ id }: { id: string }) {
-  const [state, setState] = useState<FetchState | null>(null);
-  const [notFound, setNotFound] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch(`/api/chat/${id}/messages?limit=30`)
-      .then((res) => {
-        if (res.status === 404) {
-          setNotFound(true);
-          return null;
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (cancelled || !data) return;
-        setState({
-          messages: data.messages,
-          isReadonly: data.isReadonly,
-          hasMore: data.hasMore,
-          nextCursor: data.nextCursor,
-        });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
-
-  if (notFound) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/";
-    }
-    return <ChatSkeleton />;
-  }
-
-  if (!state) {
-    return <ChatSkeleton />;
-  }
-
+  initialHasMore: boolean;
+  initialHistoryCursor: string | null;
+}) {
   return (
     <>
       <Chat
         autoResume={true}
         id={id}
-        initialMessages={state.messages}
-        isReadonly={state.isReadonly}
-        initialHasMore={state.hasMore}
-        initialHistoryCursor={state.nextCursor}
+        initialMessages={initialMessages}
+        isReadonly={isReadonly}
+        initialHasMore={initialHasMore}
+        initialHistoryCursor={initialHistoryCursor}
       />
       <DataStreamHandler />
     </>

@@ -33,7 +33,6 @@ import { Messages } from "./messages";
 import { NavPanel } from "./nav-panel";
 import { MODELS } from "@/lib/ai/models";
 import { getChatHistoryPaginationKey } from "@/lib/chat-history-keys";
-import { toast } from "./toast";
 export function Chat({
   id,
   initialMessages,
@@ -159,10 +158,7 @@ export function Chat({
         ) {
           setShowCreditCardAlert(true);
         } else {
-          toast({
-            type: "error",
-            description: error.message,
-          });
+          console.error(error.message);
         }
       }
     },
@@ -192,6 +188,13 @@ export function Chat({
       })
       .finally(() => setIsLoadingOlder(false));
   }, [hasMoreHistory, isLoadingOlder, historyCursor, id, setMessages]);
+
+  // On mount, eagerly backfill older messages if RSC only sent a small initial batch
+  useEffect(() => {
+    if (hasMoreHistory && historyCursor) {
+      loadOlder();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const searchParams = useSearchParams();
   const query = searchParams.get("query");
@@ -298,7 +301,7 @@ export function Chat({
                     submitForm();
                   }}
                 >
-                  <div className={`flex items-center${status !== "ready" ? " invisible pointer-events-none" : ""}`}>
+                  <div className={`flex items-center${status !== "ready" ? " opacity-0 pointer-events-none" : ""}`}>
                     <button type="button" className="flex shrink-0 items-center justify-center text-foreground opacity-0 pointer-events-none">
                       <VoiceWaveIcon size={20} />
                     </button>
