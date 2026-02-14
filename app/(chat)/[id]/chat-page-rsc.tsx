@@ -16,9 +16,8 @@ export async function ChatPageRSC({
     notFound();
   }
 
-  // DB returns DESC — reverse to chronological
-  const dbMessages = [...data.messages].reverse();
-  const uiMessages = convertToUIMessages(dbMessages);
+  // getChatTail returns messages in ASC order (chronological)
+  const uiMessages = convertToUIMessages(data.messages);
 
   const isReadonly = session?.user?.id !== data.chat.userId;
   const nextCursor =

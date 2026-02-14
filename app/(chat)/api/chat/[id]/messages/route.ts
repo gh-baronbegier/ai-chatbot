@@ -1,5 +1,5 @@
 import { auth } from "@/app/(auth)/auth";
-import { getChatMessagesPageFast } from "@/lib/db/fast-chat-queries";
+import { getChatMessagesPage } from "@/lib/db/chat-page-fast";
 import { convertToUIMessages } from "@/lib/utils";
 
 export async function GET(
@@ -15,20 +15,21 @@ export async function GET(
     100,
   );
 
+  // Skip auth if no Cookie header (anonymous viewers are always readonly)
+  const hasCookie = request.headers.has("cookie");
   const [data, session] = await Promise.all([
-    getChatMessagesPageFast({ chatId: id, limit, beforeId: before ?? undefined }),
-    auth(),
+    getChatMessagesPage({ chatId: id, limit, beforeId: before ?? undefined }),
+    hasCookie ? auth() : Promise.resolve(null),
   ]);
 
-  if (!data.chat) {
+  if (!data.chatUserId) {
     return Response.json({ error: "Chat not found" }, { status: 404 });
   }
 
-  // DB returns DESC — reverse to chronological
-  const dbMessages = [...data.messages].reverse();
-  const uiMessages = convertToUIMessages(dbMessages);
+  // Messages are already in ASC order from getChatMessagesPage
+  const uiMessages = convertToUIMessages(data.messages);
 
-  const isReadonly = session?.user?.id !== data.chat.userId;
+  const isReadonly = session?.user?.id !== data.chatUserId;
 
   return Response.json(
     {

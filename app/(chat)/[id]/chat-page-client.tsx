@@ -2,7 +2,12 @@
 
 import dynamic from "next/dynamic";
 import type { ChatMessage } from "@/lib/types";
-import { Chat } from "@/components/chat";
+import { ChatSkeleton } from "../chat-skeleton";
+
+const DynamicChat = dynamic(
+  () => import("@/components/chat").then((m) => ({ default: m.Chat })),
+  { ssr: true, loading: () => <ChatSkeleton /> },
+);
 
 const DataStreamHandler = dynamic(
   () =>
@@ -27,7 +32,7 @@ export function ChatPageClient({
 }) {
   return (
     <>
-      <Chat
+      <DynamicChat
         autoResume={true}
         id={id}
         initialMessages={initialMessages}
