@@ -21,14 +21,10 @@ export function ChatPageClient({
   id,
   initialMessages,
   isReadonly,
-  initialHasMore,
-  initialHistoryCursor,
 }: {
   id: string;
   initialMessages: ChatMessage[];
   isReadonly: boolean;
-  initialHasMore: boolean;
-  initialHistoryCursor: string | null;
 }) {
   return (
     <>
@@ -37,8 +33,6 @@ export function ChatPageClient({
         id={id}
         initialMessages={initialMessages}
         isReadonly={isReadonly}
-        initialHasMore={initialHasMore}
-        initialHistoryCursor={initialHistoryCursor}
       />
       <DataStreamHandler />
     </>

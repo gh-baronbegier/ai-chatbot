@@ -280,8 +280,7 @@ export async function POST(request: Request) {
           },
         } as const;
 
-        const openaiReasoningEffort =
-          selectedChatModel.includes("gpt-5.3-codex") ? "xhigh" : "high";
+        const openaiReasoningEffort = "xhigh";
 
         const providerOptions: Parameters<typeof streamText>[0]["providerOptions"] =
           isClaudeMaxModel && enableThinking

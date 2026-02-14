@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import {
@@ -41,8 +41,6 @@ export function Chat({
   initialInput = "",
   isFork = false,
   autoSendInitialInput = false,
-  initialHasMore = false,
-  initialHistoryCursor = null,
 }: {
   id: string;
   initialMessages: ChatMessage[];
@@ -51,8 +49,6 @@ export function Chat({
   initialInput?: string;
   isFork?: boolean;
   autoSendInitialInput?: boolean;
-  initialHasMore?: boolean;
-  initialHistoryCursor?: string | null;
 }) {
   const router = useRouter();
 
@@ -82,13 +78,10 @@ export function Chat({
   const latestRef = useRef({ thinkingBudget, maxTokens, selectedModel });
   latestRef.current = { thinkingBudget, maxTokens, selectedModel };
 
-  // Set document title to model label when there's no chat title yet
   useEffect(() => {
-    if (initialMessages.length === 0) {
-      const label = MODELS.find((m) => m.id === selectedModel)?.label ?? selectedModel;
-      document.title = label;
-    }
-  }, [selectedModel, initialMessages.length]);
+    const label = MODELS.find((m) => m.id === selectedModel)?.label ?? selectedModel;
+    document.title = label;
+  }, [selectedModel]);
 
   const {
     messages,
@@ -163,38 +156,6 @@ export function Chat({
       }
     },
   });
-
-  // --- History pagination state ---
-  const [historyCursor, setHistoryCursor] = useState<string | null>(initialHistoryCursor);
-  const [hasMoreHistory, setHasMoreHistory] = useState(initialHasMore);
-  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
-
-  const loadOlder = useCallback(() => {
-    if (!hasMoreHistory || isLoadingOlder || !historyCursor) return;
-    setIsLoadingOlder(true);
-
-    fetch(`/api/chat/${id}/messages?before=${historyCursor}&limit=50`)
-      .then((res) => res.json())
-      .then((data: { messages: ChatMessage[]; hasMore: boolean; nextCursor: string | null }) => {
-        startTransition(() => {
-          setMessages((prev) => {
-            const existingIds = new Set(prev.map((m) => m.id));
-            const newMessages = data.messages.filter((m) => !existingIds.has(m.id));
-            return [...newMessages, ...prev];
-          });
-          setHistoryCursor(data.nextCursor);
-          setHasMoreHistory(data.hasMore);
-        });
-      })
-      .finally(() => setIsLoadingOlder(false));
-  }, [hasMoreHistory, isLoadingOlder, historyCursor, id, setMessages]);
-
-  // On mount, eagerly backfill older messages if RSC only sent a small initial batch
-  useEffect(() => {
-    if (hasMoreHistory && historyCursor) {
-      loadOlder();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const searchParams = useSearchParams();
   const query = searchParams.get("query");
@@ -275,14 +236,11 @@ export function Chat({
           <Messages
             addToolApprovalResponse={addToolApprovalResponse}
             chatId={id}
-            hasMoreHistory={hasMoreHistory}
-            isLoadingOlder={isLoadingOlder}
             isReadonly={isReadonly}
             messages={messages.length > 0 && messages[messages.length - 1].role === "user"
               ? [...messages, { id: "__placeholder__", role: "assistant", parts: [{ type: "text" as const, text: "" }] } as ChatMessage]
               : messages}
             onBackgroundTap={focusTextarea}
-            onLoadOlder={loadOlder}
             regenerate={regenerate}
             setMessages={setMessages}
             status={status}

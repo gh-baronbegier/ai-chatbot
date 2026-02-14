@@ -20,16 +20,12 @@ export async function ChatPageRSC({
   const uiMessages = convertToUIMessages(data.messages);
 
   const isReadonly = session?.user?.id !== data.chat.userId;
-  const nextCursor =
-    data.hasMore && uiMessages.length > 0 ? uiMessages[0].id : null;
 
   return (
     <ChatPageClient
       id={id}
       initialMessages={uiMessages}
       isReadonly={isReadonly}
-      initialHasMore={data.hasMore}
-      initialHistoryCursor={nextCursor}
     />
   );
 }

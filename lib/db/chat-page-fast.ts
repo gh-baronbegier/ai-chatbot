@@ -31,7 +31,8 @@ export type ChatMessagesPageResult = {
 };
 
 /**
- * Initial page load: ONE SQL query for chat metadata + last 2 messages + hasMore.
+ * Initial page load: ONE SQL query for chat metadata + ALL messages.
+ * Full result is cached in Redis (invalidated on every write).
  * Returns messages in ASC order (chronological).
  */
 export async function getChatTail(chatId: string): Promise<ChatTail> {
@@ -45,29 +46,20 @@ export async function getChatTail(chatId: string): Promise<ChatTail> {
       m.role       AS msg_role,
       m.parts      AS msg_parts,
       m.attachments AS msg_attachments,
-      m."createdAt" AS msg_created_at,
-      (third.id IS NOT NULL) AS has_more
+      m."createdAt" AS msg_created_at
     FROM "Chat" c
     LEFT JOIN LATERAL (
       SELECT id, role, parts, attachments, "createdAt"
       FROM "Message_v2"
       WHERE "chatId" = c.id
-      ORDER BY "createdAt" DESC
-      LIMIT 2
+      ORDER BY "createdAt" ASC
     ) m ON true
-    LEFT JOIN LATERAL (
-      SELECT id
-      FROM "Message_v2"
-      WHERE "chatId" = c.id
-      ORDER BY "createdAt" DESC
-      OFFSET 2 LIMIT 1
-    ) third ON true
     WHERE c.id = ${chatId}
     ORDER BY m."createdAt" ASC NULLS LAST
   `;
 
   if (rows.length === 0) {
-    return { chat: null, messages: [], hasMore: false };
+    return { chat: null, messages: [] };
   }
 
   const first = rows[0];
@@ -80,8 +72,6 @@ export async function getChatTail(chatId: string): Promise<ChatTail> {
       }
     : null;
 
-  const hasMore = Boolean(first.has_more);
-
   const messages = rows
     .filter((r) => r.msg_id != null)
     .map((r) => ({
@@ -93,7 +83,7 @@ export async function getChatTail(chatId: string): Promise<ChatTail> {
       createdAt: new Date(r.msg_created_at as string),
     }));
 
-  return { chat, messages, hasMore };
+  return { chat, messages };
 }
 
 /**

@@ -19,9 +19,6 @@ type MessagesProps = {
   isReadonly: boolean;
   onBackgroundTap?: () => void;
   inputSlot?: React.ReactNode;
-  hasMoreHistory?: boolean;
-  isLoadingOlder?: boolean;
-  onLoadOlder?: () => void;
 };
 
 function PureMessages({
@@ -34,9 +31,6 @@ function PureMessages({
   isReadonly,
   onBackgroundTap,
   inputSlot,
-  hasMoreHistory,
-  isLoadingOlder,
-  onLoadOlder,
 }: MessagesProps) {
   const {
     containerRef: messagesContainerRef,
@@ -48,10 +42,6 @@ function PureMessages({
   });
 
   useDataStream();
-
-  // Track previous message count to detect prepends for scroll preservation
-  const prevMessageCountRef = useRef(messages.length);
-  const prevFirstIdRef = useRef(messages[0]?.id);
 
   // The total row count: messages + input slot + bottom spacer
   // Always include input row to keep virtualizer row count stable across status changes
@@ -72,48 +62,6 @@ function PureMessages({
       return "__spacer__";
     },
   });
-
-  // Scroll preservation when messages are prepended (older loaded)
-  useEffect(() => {
-    const prevCount = prevMessageCountRef.current;
-    const prevFirstId = prevFirstIdRef.current;
-    const currentFirstId = messages[0]?.id;
-
-    prevMessageCountRef.current = messages.length;
-    prevFirstIdRef.current = currentFirstId;
-
-    // If messages were prepended (first id changed, count increased)
-    if (
-      prevFirstId &&
-      currentFirstId !== prevFirstId &&
-      messages.length > prevCount
-    ) {
-      const addedCount = messages.length - prevCount;
-      // Find the previous first message in the new list and scroll to it
-      const container = messagesContainerRef.current;
-      if (container) {
-        // Measure will happen async; use requestAnimationFrame to scroll after layout
-        requestAnimationFrame(() => {
-          virtualizer.scrollToIndex(addedCount, { align: "start" });
-        });
-      }
-    }
-  }, [messages, messagesContainerRef, virtualizer]);
-
-  // Trigger loading older messages when scrolled near top
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container || !onLoadOlder || !hasMoreHistory) return;
-
-    const handleScroll = () => {
-      if (container.scrollTop < 240 && !isLoadingOlder) {
-        onLoadOlder();
-      }
-    };
-
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, [messagesContainerRef, onLoadOlder, hasMoreHistory, isLoadingOlder]);
 
   const touchRef = useRef({ startX: 0, startY: 0, moved: false });
 
@@ -174,11 +122,6 @@ function PureMessages({
             position: "relative",
           }}
         >
-          {isLoadingOlder && (
-            <div className="absolute top-[52px] left-0 right-0 flex justify-center py-2 z-10">
-              <span className="text-muted-foreground text-sm">Loading older messages...</span>
-            </div>
-          )}
           {virtualItems.map((virtualRow) => {
             const index = virtualRow.index;
 

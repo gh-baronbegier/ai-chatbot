@@ -15,7 +15,6 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { ChatSDKError } from "../errors";
 import { generateUUID } from "../utils";
-import { invalidateChatCache } from "./chat-cache";
 import {
   type Chat,
   chat,
@@ -112,7 +111,6 @@ export async function deleteChatById({ id }: { id: string }) {
       .returning();
     return chatsDeleted;
   }, "Failed to delete chat by id");
-  invalidateChatCache(id);
   return result;
 }
 
@@ -222,10 +220,6 @@ export async function saveMessages({ messages }: { messages: DBMessage[] }) {
     () => db.insert(message).values(messages),
     "Failed to save messages"
   );
-  const chatIds = new Set(messages.map((m) => m.chatId));
-  for (const chatId of chatIds) {
-    invalidateChatCache(chatId);
-  }
   return result;
 }
 
@@ -245,9 +239,6 @@ export async function updateMessage({
         .returning({ chatId: message.chatId }),
     "Failed to update message"
   );
-  if (result.length > 0) {
-    invalidateChatCache(result[0].chatId);
-  }
   return result;
 }
 
@@ -338,7 +329,6 @@ export async function deleteMessagesByChatIdAfterTimestamp({
         );
     }
   }, "Failed to delete messages by chat id after timestamp");
-  invalidateChatCache(chatId);
   return result;
 }
 

@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import { DEFAULT_CHAT_MODEL, MODELS, OPENAI_CODEX_CHAT_MODEL } from "@/lib/ai/models";
+import { DEFAULT_CHAT_MODEL, MODELS, OPENAI_CODEX_CHAT_MODEL, OPENAI_CODEX_52_CHAT_MODEL } from "@/lib/ai/models";
 import { fetcher } from "@/lib/utils";
 import { useModel } from "./model-provider";
 import {
@@ -212,7 +212,8 @@ export default function NavPanelContent({
               {MODELS.map((model) => {
                 const isFeatured =
                   model.id === DEFAULT_CHAT_MODEL ||
-                  model.id === OPENAI_CODEX_CHAT_MODEL;
+                  model.id === OPENAI_CODEX_CHAT_MODEL ||
+                  model.id === OPENAI_CODEX_52_CHAT_MODEL;
                 const isAvailable = availableModelIds.includes(model.id);
                 return (
                   <DropdownMenuItem
